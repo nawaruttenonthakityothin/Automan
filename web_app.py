@@ -357,8 +357,12 @@ def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_us
     except Exception as e:
         return False, f"ข้อผิดพลาด Webhook: {e}"
 
-DEFAULT_GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6KN_6w-Bpc46GvFmYwp6aTG4NLtAYBwbo6oMMF9UCmsjQ")
+DEFAULT_GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6IqPdkzRsoi7lHG6z_6g8KNAF-7HEf-RiNECzNDwwqv4A")
 DEFAULT_WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "https://default6345207c7bd249f1920ea5aa88e4c1.c0.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/06/workflows/c8f4931f9e5646a08603ea1e9a63c307/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Ue9CmEeB2GiJGWDyDWsCFpE7QcPcSYwXnKcXutGqRp0")
+
+DEFAULT_EXCEL_PATH = r"C:\Users\Nawarutte.Non\OneDrive - Millennium Group Corporation (Asia) Public Company Limited\Automan\Template Column Excel Summary User.xlsx"
+if not os.path.exists(DEFAULT_EXCEL_PATH):
+    DEFAULT_EXCEL_PATH = "Template Column Excel Summary User.xlsx"
 
 # ==========================================
 # 🖥️ Sidebar & Config Setup
@@ -376,7 +380,7 @@ with st.sidebar:
     
     excel_path = st.text_input(
         "📂 ไฟล์ Excel Summary Target",
-        value="Template Column Excel Summary User.xlsx",
+        value=DEFAULT_EXCEL_PATH,
         help="ตำแหน่งไฟล์ Excel ที่เชื่อมกับ SharePoint / OneDrive"
     )
     
