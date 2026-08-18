@@ -143,6 +143,7 @@ def extract_with_gemini_vision(img, api_key):
   "Branch": "ชื่อสาขาภาษาไทย (ถ้าไม่มีในภาพให้เป็นว่างเปล่า \"\")"
 }"""
 
+    # 1. ลองใช้ google.genai SDK
     try:
         from google import genai
         from google.genai import types
@@ -182,6 +183,70 @@ def extract_with_gemini_vision(img, api_key):
                 continue
     except Exception:
         pass
+
+    # 2. REST API Fallback (HTTP Direct)
+    try:
+        buffered = io.BytesIO()
+        img.convert('RGB').save(buffered, format="JPEG", quality=90)
+        img_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        
+        endpoints = [
+            ("v1beta", "gemini-1.5-flash"),
+            ("v1beta", "gemini-2.0-flash-exp"),
+            ("v1", "gemini-1.5-flash"),
+            ("v1beta", "gemini-1.5-pro"),
+        ]
+        
+        for api_ver, model_name in endpoints:
+            url = f"https://generativelanguage.googleapis.com/{api_ver}/models/{model_name}:generateContent?key={clean_key}"
+            headers = {"Content-Type": "application/json"}
+            if clean_key.startswith("AQ."):
+                headers["Authorization"] = f"Bearer {clean_key}"
+                
+            payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type": "image/jpeg",
+                                    "data": img_b64
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "response_mime_type": "application/json"
+                }
+            }
+            
+            res = requests.post(url, json=payload, headers=headers, timeout=15)
+            if res.status_code == 200:
+                result_json = res.json()
+                raw_text = result_json['candidates'][0]['content']['parts'][0]['text'].strip()
+                raw_text = re.sub(r'^```json\s*', '', raw_text, flags=re.IGNORECASE)
+                raw_text = re.sub(r'```$', '', raw_text).strip()
+                
+                parsed_data = json.loads(raw_text)
+                
+                app_name = parsed_data.get("Application", "E-Travelling")
+                user_id = str(parsed_data.get("App user ID", "")).strip()
+                if app_name == "VSM" and user_id:
+                    user_id = user_id.replace('.', '')
+                    if len(user_id) > 3:
+                        user_id = user_id[:-3] + '.' + user_id[-3:]
+                    parsed_data["App user ID"] = user_id
+                    
+                email = str(parsed_data.get("Email", "")).strip()
+                if email:
+                    parsed_data["Email"] = fix_email_domain(email)
+                    
+                return parsed_data
+    except Exception:
+        pass
+
     return None
 
 def process_mapping(extracted_data):
