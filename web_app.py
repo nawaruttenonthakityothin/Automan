@@ -292,6 +292,9 @@ def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_us
     except Exception as e:
         return False, f"ข้อผิดพลาด Webhook: {e}"
 
+DEFAULT_GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6KN_6w-Bpc46GvFmYwp6aTG4NLtAYBwbo6oMMF9UCmsjQ")
+DEFAULT_WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "https://default6345207c7bd249f1920ea5aa88e4c1.c0.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/06/workflows/c8f4931f9e5646a08603ea1e9a63c307/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Ue9CmEeB2GiJGWDyDWsCFpE7QcPcSYwXnKcXutGqRp0")
+
 # ==========================================
 # 🖥️ Sidebar & Config Setup
 # ==========================================
@@ -301,8 +304,8 @@ with st.sidebar:
     
     gemini_key = st.text_input(
         "🔑 Gemini Vision API Key (แม่นยำ 100% ฟรี)",
-        value=os.environ.get("GEMINI_API_KEY", ""),
-        type="password",
+        value=DEFAULT_GEMINI_KEY,
+        type="default",
         help="รับ API Key ฟรีได้จาก https://aistudio.google.com/app/apikey"
     )
     
@@ -314,13 +317,13 @@ with st.sidebar:
     
     webhook_url = st.text_input(
         "⚡ Power Automate Webhook URL",
-        value=os.environ.get("WEBHOOK_URL", ""),
-        type="password",
+        value=DEFAULT_WEBHOOK_URL,
+        type="default",
         help="HTTP Webhook Trigger URL จาก Power Automate"
     )
 
     st.markdown("---")
-    st.markdown("💡 **คู่มือใช้งาน**: อัปโหลดภาพแคปเจอร์หน้าจอ (`Snipping Tool`) จากระบบ VSM, E-Travelling, Forma, Red plate หรือ Pandora เพื่อประมวลผลอัตโนมัติ")
+    st.markdown("💡 **คู่มือใช้งาน**: กด `Ctrl + V` เพื่อวางรูปภาพ หรือลากไฟล์ภาพแคปเจอร์หน้าจอ (`Snipping Tool`) จากระบบ VSM, E-Travelling, Forma, Red plate หรือ Pandora เพื่อประมวลผลอัตโนมัติ")
 
 # ==========================================
 # 🚀 Main Page Header
@@ -329,7 +332,47 @@ st.title("🔐 User Access Automation Web App")
 st.caption("ระบบอ่านข้อมูลจากภาพแคปเจอร์ด้วย AI (Gemini 2.0 Flash Vision AI) ➔ บันทึก Excel ➔ ส่ง Email ตอบกลับอัตโนมัติ")
 
 # --- Step 1: Upload Image & Application Selection ---
-st.subheader("📸 1. อัปโหลดภาพแคปเจอร์หน้าจอ (Screenshot Upload)")
+st.subheader("📸 1. วางรูปภาพ (Ctrl + V) หรืออัปโหลดภาพแคปเจอร์หน้าจอ")
+
+# HTML5 Paste Component Listener for Ctrl + V
+import streamlit.components.v1 as components
+components.html("""
+<div id="paste-box" style="
+    border: 2px dashed #0d6efd; 
+    background-color: #f0f7ff; 
+    padding: 15px; 
+    text-align: center; 
+    border-radius: 8px; 
+    margin-bottom: 10px;
+">
+    <div style="font-size: 16px; font-weight: bold; color: #0d6efd; font-family: sans-serif;">
+        📋 กด Ctrl + V ตรงนี้เพื่อวางรูปภาพจาก Clipboard ทันที
+    </div>
+    <div style="font-size: 12px; color: #6c757d; margin-top: 4px; font-family: sans-serif;">
+        (แคปภาพด้วย Snipping Tool แล้วกด Ctrl + V ได้เลย)
+    </div>
+</div>
+
+<script>
+document.addEventListener('paste', function (e) {
+    var items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (var i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            var blob = items[i].getAsFile();
+            var reader = new FileReader();
+            reader.onload = function (event) {
+                var b64 = event.target.result;
+                window.parent.postMessage({
+                    type: 'streamlit:setComponentValue',
+                    value: b64
+                }, '*');
+            };
+            reader.readAsDataURL(blob);
+        }
+    }
+});
+</script>
+""", height=100)
 
 col_app, col_up = st.columns([1, 2])
 
@@ -344,10 +387,21 @@ with col_up:
         "ลากวาง หรือเลือกไฟล์ภาพแคปเจอร์หน้าจอ (รองรับ PNG, JPG, JPEG, WEBP)",
         type=["png", "jpg", "jpeg", "webp"]
     )
+    b64_paste_input = st.text_input("📋 หรือวาง Base64 / Image DataURL (Ctrl + V)", key="paste_b64", placeholder="วางภาพจาก Clipboard ด้วย Ctrl + V...")
 
+image = None
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="ภาพแคปเจอร์ที่อัปโหลด", use_column_width=True)
+elif b64_paste_input and b64_paste_input.startswith("data:image"):
+    try:
+        b64_data = b64_paste_input.split(",", 1)[1]
+        image_bytes = base64.b64decode(b64_data)
+        image = Image.open(io.BytesIO(image_bytes))
+    except Exception as e:
+        st.error(f"เกิดข้อผิดพลาดในการอ่านภาพที่วาง: {e}")
+
+if image is not None:
+    st.image(image, caption="ภาพแคปเจอร์ที่เลือก/วาง", use_column_width=True)
 
     if st.button("🤖 2. ประมวลผลและดึงข้อมูลจากภาพ (Extract Data)", type="primary"):
         with st.spinner("⏳ กำลังวิเคราะห์ภาพด้วย Gemini 2.0 Flash Vision AI..."):
