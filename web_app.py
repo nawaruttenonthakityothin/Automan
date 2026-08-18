@@ -357,12 +357,47 @@ def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_us
     except Exception as e:
         return False, f"ข้อผิดพลาด Webhook: {e}"
 
-DEFAULT_GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6IqPdkzRsoi7lHG6z_6g8KNAF-7HEf-RiNECzNDwwqv4A")
-DEFAULT_WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "https://default6345207c7bd249f1920ea5aa88e4c1.c0.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/06/workflows/c8f4931f9e5646a08603ea1e9a63c307/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Ue9CmEeB2GiJGWDyDWsCFpE7QcPcSYwXnKcXutGqRp0")
+WEB_CONFIG_FILE = "web_config.json"
 
-DEFAULT_EXCEL_PATH = r"C:\Users\Nawarutte.Non\OneDrive - Millennium Group Corporation (Asia) Public Company Limited\Automan\Template Column Excel Summary User.xlsx"
-if not os.path.exists(DEFAULT_EXCEL_PATH):
-    DEFAULT_EXCEL_PATH = "Template Column Excel Summary User.xlsx"
+def load_web_config():
+    default_excel = r"C:\Users\Nawarutte.Non\OneDrive - Millennium Group Corporation (Asia) Public Company Limited\Automan\Template Column Excel Summary User.xlsx"
+    if not os.path.exists(DEFAULT_EXCEL_PATH if 'DEFAULT_EXCEL_PATH' in locals() else default_excel):
+        default_excel = "Template Column Excel Summary User.xlsx"
+    
+    cfg = {
+        "gemini_api_key": os.environ.get("GEMINI_API_KEY", ""),
+        "excel_path": default_excel,
+        "webhook_url": os.environ.get("WEBHOOK_URL", "https://default6345207c7bd249f1920ea5aa88e4c1.c0.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/06/workflows/c8f4931f9e5646a08603ea1e9a63c307/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Ue9CmEeB2GiJGWDyDWsCFpE7QcPcSYwXnKcXutGqRp0")
+    }
+    
+    for fname in [WEB_CONFIG_FILE, "app_config.json"]:
+        if os.path.exists(fname):
+            try:
+                with open(fname, "r", encoding="utf-8") as f:
+                    saved = json.load(f)
+                    if saved.get("gemini_api_key"):
+                        cfg["gemini_api_key"] = saved["gemini_api_key"]
+                    if saved.get("excel_path"):
+                        cfg["excel_path"] = saved["excel_path"]
+                    if saved.get("webhook_url"):
+                        cfg["webhook_url"] = saved["webhook_url"]
+            except Exception:
+                pass
+    return cfg
+
+def save_web_config(api_k, exc_p, wh_u):
+    try:
+        data = {
+            "gemini_api_key": api_k.strip(),
+            "excel_path": exc_p.strip(),
+            "webhook_url": wh_u.strip()
+        }
+        with open(WEB_CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+CURRENT_WEB_CFG = load_web_config()
 
 # ==========================================
 # 🖥️ Sidebar & Config Setup
@@ -373,26 +408,35 @@ with st.sidebar:
     
     gemini_key = st.text_input(
         "🔑 Gemini Vision API Key (แม่นยำ 100% ฟรี)",
-        value=DEFAULT_GEMINI_KEY,
+        value=CURRENT_WEB_CFG.get("gemini_api_key", ""),
         type="default",
+        placeholder="วาง API Key ที่นี่ (ระบบจะจดจำคีย์ล่าสุดให้อัตโนมัติ)",
         help="รับ API Key ฟรีได้จาก https://aistudio.google.com/app/apikey"
     )
     
     excel_path = st.text_input(
         "📂 ไฟล์ Excel Summary Target",
-        value=DEFAULT_EXCEL_PATH,
+        value=CURRENT_WEB_CFG.get("excel_path", "Template Column Excel Summary User.xlsx"),
         help="ตำแหน่งไฟล์ Excel ที่เชื่อมกับ SharePoint / OneDrive"
     )
     
     webhook_url = st.text_input(
         "⚡ Power Automate Webhook URL",
-        value=DEFAULT_WEBHOOK_URL,
+        value=CURRENT_WEB_CFG.get("webhook_url", ""),
         type="default",
         help="HTTP Webhook Trigger URL จาก Power Automate"
     )
 
+    if st.button("💾 บันทึกการตั้งค่า (Save Settings)", use_container_width=True):
+        save_web_config(gemini_key, excel_path, webhook_url)
+        st.success("💾 บันทึกค่าการใช้งานล่าสุดเรียบร้อยแล้ว!")
+
     st.markdown("---")
-    st.markdown("💡 **คู่มือใช้งาน**: กด `Ctrl + V` เพื่อวางรูปภาพ หรือลากไฟล์ภาพแคปเจอร์หน้าจอ (`Snipping Tool`) จากระบบ VSM, E-Travelling, Forma, Red plate หรือ Pandora เพื่อประมวลผลอัตโนมัติ")
+    st.markdown("💡 **คู่มือใช้งาน**: วาง API Key ของคุณในช่องด้านบน ระบบจะจดจำคีย์ล่าสุดที่ใช้ไว้ตลอดเวลา จากนั้นแคปภาพหน้าจอและกดวางภาพได้เลยครับ")
+
+# Auto-save key whenever used
+if gemini_key and gemini_key != CURRENT_WEB_CFG.get("gemini_api_key", ""):
+    save_web_config(gemini_key, excel_path, webhook_url)
 
 # ==========================================
 # 🚀 Main Page Header
