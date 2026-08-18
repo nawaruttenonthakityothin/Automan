@@ -332,7 +332,7 @@ st.title("🔐 User Access Automation Web App")
 st.caption("ระบบอ่านข้อมูลจากภาพแคปเจอร์ด้วย AI (Gemini 2.0 Flash Vision AI) ➔ บันทึก Excel ➔ ส่ง Email ตอบกลับอัตโนมัติ")
 
 # --- Step 1: Upload Image & Application Selection ---
-st.subheader("📸 1. วางรูปภาพ (Clipboard Paste) หรืออัปโหลดภาพแคปเจอร์หน้าจอ")
+st.subheader("📸 1. วางรูปภาพ (Clipboard Paste) หรืออัปโหลดไฟล์ภาพแคปเจอร์หน้าจอ")
 
 col_app, col_paste, col_up = st.columns([1, 1, 1.5])
 
@@ -369,7 +369,7 @@ elif uploaded_file is not None:
     image = Image.open(uploaded_file)
 
 if image is not None:
-    st.image(image, caption="ภาพแคปเจอร์ที่เลือก/วาง", use_column_width=True)
+    st.image(image, caption="ภาพแคปเจอร์ที่เลือก/วาง", use_container_width=True)
 
     if st.button("🤖 2. ประมวลผลและดึงข้อมูลจากภาพ (Extract Data)", type="primary"):
         with st.spinner("⏳ กำลังวิเคราะห์ภาพด้วย Gemini 2.0 Flash Vision AI..."):
