@@ -334,27 +334,42 @@ st.caption("ระบบอ่านข้อมูลจากภาพแค�
 # --- Step 1: Upload Image & Application Selection ---
 st.subheader("📸 1. วางรูปภาพ (Ctrl + V) หรืออัปโหลดภาพแคปเจอร์หน้าจอ")
 
-# HTML5 Paste Component Listener for Ctrl + V
+# HTML5 Interactive Paste Component Listener for Ctrl + V
 import streamlit.components.v1 as components
 components.html("""
-<div id="paste-box" style="
-    border: 2px dashed #0d6efd; 
+<div id="paste-dropzone" tabindex="0" style="
+    border: 3px dashed #0d6efd; 
     background-color: #f0f7ff; 
-    padding: 15px; 
+    padding: 20px; 
     text-align: center; 
-    border-radius: 8px; 
-    margin-bottom: 10px;
-">
-    <div style="font-size: 16px; font-weight: bold; color: #0d6efd; font-family: sans-serif;">
-        📋 กด Ctrl + V ตรงนี้เพื่อวางรูปภาพจาก Clipboard ทันที
+    border-radius: 10px; 
+    cursor: pointer; 
+    outline: none;
+    transition: all 0.2s ease-in-out;
+" onclick="this.focus(); this.style.borderColor='#0b5ed7'; this.style.backgroundColor='#e2f0ff';">
+    <div style="font-size: 18px; font-weight: bold; color: #0d6efd; font-family: system-ui, -apple-system, sans-serif;">
+        📋 คลิกตรงนี้หนึ่งครั้ง แล้วกด Ctrl + V เพื่อวางรูปภาพจาก Clipboard ทันที
     </div>
-    <div style="font-size: 12px; color: #6c757d; margin-top: 4px; font-family: sans-serif;">
-        (แคปภาพด้วย Snipping Tool แล้วกด Ctrl + V ได้เลย)
+    <div style="font-size: 13px; color: #555; margin-top: 6px; font-family: system-ui, -apple-system, sans-serif;">
+        (แคปภาพด้วย Snipping Tool ➔ คลิกที่นี่ ➔ กด Ctrl + V ได้เลย)
     </div>
+    <div id="paste-status-msg" style="margin-top: 8px; font-weight: bold; color: #198754; display: none; font-family: system-ui, -apple-system, sans-serif;">
+        ✅ วางรูปภาพเรียบร้อยแล้ว! กำลังส่งรูปภาพ...
+    </div>
+    <img id="paste-img-preview" style="max-width: 90%; max-height: 200px; display: none; margin: 10px auto; border-radius: 6px; border: 1px solid #ccc;"/>
 </div>
 
 <script>
-document.addEventListener('paste', function (e) {
+const dropzone = document.getElementById('paste-dropzone');
+const statusMsg = document.getElementById('paste-status-msg');
+const imgPreview = document.getElementById('paste-img-preview');
+
+// Auto focus on load
+window.addEventListener('load', function() {
+    dropzone.focus();
+});
+
+dropzone.addEventListener('paste', function (e) {
     var items = (e.clipboardData || e.originalEvent.clipboardData).items;
     for (var i = 0; i < items.length; i++) {
         if (items[i].type.indexOf('image') !== -1) {
@@ -362,17 +377,33 @@ document.addEventListener('paste', function (e) {
             var reader = new FileReader();
             reader.onload = function (event) {
                 var b64 = event.target.result;
-                window.parent.postMessage({
-                    type: 'streamlit:setComponentValue',
-                    value: b64
-                }, '*');
+                imgPreview.src = b64;
+                imgPreview.style.display = 'block';
+                statusMsg.style.display = 'block';
+
+                try {
+                    // Find parent window input field for paste_b64
+                    const inputs = window.parent.document.querySelectorAll('input');
+                    for (let inp of inputs) {
+                        if (inp.placeholder && inp.placeholder.includes('Ctrl + V')) {
+                            var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+                            nativeSetter.call(inp, b64);
+                            inp.dispatchEvent(new Event('input', { bubbles: true }));
+                            inp.dispatchEvent(new Event('change', { bubbles: true }));
+                            break;
+                        }
+                    }
+                } catch(err) {
+                    console.log("Paste sync err:", err);
+                }
             };
             reader.readAsDataURL(blob);
+            e.preventDefault();
         }
     }
 });
 </script>
-""", height=100)
+""", height=220)
 
 col_app, col_up = st.columns([1, 2])
 
@@ -387,7 +418,7 @@ with col_up:
         "ลากวาง หรือเลือกไฟล์ภาพแคปเจอร์หน้าจอ (รองรับ PNG, JPG, JPEG, WEBP)",
         type=["png", "jpg", "jpeg", "webp"]
     )
-    b64_paste_input = st.text_input("📋 หรือวาง Base64 / Image DataURL (Ctrl + V)", key="paste_b64", placeholder="วางภาพจาก Clipboard ด้วย Ctrl + V...")
+    b64_paste_input = st.text_input("📋 ข้อมูลรูปภาพที่วางจาก Clipboard (Ctrl + V)", key="paste_b64", placeholder="วางภาพจาก Clipboard ด้วย Ctrl + V...")
 
 image = None
 if uploaded_file is not None:
