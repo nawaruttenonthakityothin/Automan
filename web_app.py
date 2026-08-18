@@ -127,7 +127,7 @@ def fix_email_domain(email_str):
 def extract_with_gemini_vision(img, api_key):
     clean_key = api_key.strip()
     if not clean_key:
-        return None
+        return None, "กรุณากรอก Gemini API Key ในแถบตั้งค่าด้านซ้าย"
         
     prompt = """คุณคือผู้เชี่ยวชาญการอ่านข้อมูลฟอร์มระบบ VSM, E-Travelling, Forma, Red plate (Update User Info), และระบบ Pandora ของ MGC-Asia
 จงวิเคราะห์ภาพแคปเจอร์นี้ และตอบเป็น JSON บริสุทธิ์เท่านั้น (ไม่ต้องมี markdown backticks) ในรูปแบบดังนี้:
@@ -143,13 +143,15 @@ def extract_with_gemini_vision(img, api_key):
   "Branch": "ชื่อสาขาภาษาไทย (ถ้าไม่มีในภาพให้เป็นว่างเปล่า \"\")"
 }"""
 
+    last_err = ""
+
     # 1. ลองใช้ google.genai SDK
     try:
         from google import genai
         from google.genai import types
         
         client = genai.Client(api_key=clean_key)
-        models_to_try = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-flash-latest']
+        models_to_try = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest']
         for m_name in models_to_try:
             try:
                 response = client.models.generate_content(
@@ -178,11 +180,12 @@ def extract_with_gemini_vision(img, api_key):
                 email = str(parsed_data.get("Email", "")).strip()
                 if email:
                     parsed_data["Email"] = fix_email_domain(email)
-                return parsed_data
-            except Exception:
+                return parsed_data, ""
+            except Exception as ex:
+                last_err = str(ex)
                 continue
-    except Exception:
-        pass
+    except Exception as g_err:
+        last_err = str(g_err)
 
     # 2. REST API Fallback (HTTP Direct)
     try:
@@ -191,10 +194,10 @@ def extract_with_gemini_vision(img, api_key):
         img_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
         
         endpoints = [
+            ("v1beta", "gemini-2.0-flash"),
             ("v1beta", "gemini-1.5-flash"),
             ("v1beta", "gemini-2.0-flash-exp"),
-            ("v1", "gemini-1.5-flash"),
-            ("v1beta", "gemini-1.5-pro"),
+            ("v1", "gemini-1.5-flash")
         ]
         
         for api_ver, model_name in endpoints:
@@ -243,11 +246,22 @@ def extract_with_gemini_vision(img, api_key):
                 if email:
                     parsed_data["Email"] = fix_email_domain(email)
                     
-                return parsed_data
-    except Exception:
-        pass
+                return parsed_data, ""
+            else:
+                try:
+                    err_msg = res.json().get('error', {}).get('message', res.text[:120])
+                except Exception:
+                    err_msg = res.text[:120]
+                last_err = f"Google API Status {res.status_code}: {err_msg}"
+    except Exception as ex:
+        last_err = str(ex)
 
-    return None
+    if "invalid authentication" in last_err.lower() or "401" in last_err or "api key not valid" in last_err.lower():
+        hint = " (หมายเหตุ: คีย์จาก Google AI Studio จะขึ้นต้นด้วย AIzaSy... กรุณากดปุ่ม 'รับ API Key ฟรี' ที่ aistudio.google.com/app/apikey เพื่อรับคีย์ที่ถูกต้อง)"
+    else:
+        hint = ""
+
+    return None, f"ไม่สามารถสกัดข้อมูลจากภาพได้: {last_err}{hint}"
 
 def process_mapping(extracted_data):
     email = extracted_data.get("Email", "")
@@ -348,7 +362,11 @@ def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_us
             "FullNameThai": raw_data.get("Full Name Thai", ""),
             "FullNameEng": raw_data.get("Full Name Eng", ""),
             "Position": raw_data.get("Position", ""),
-            "Company": raw_data.get("Company", "")
+            "Company": raw_data.get("Company", ""),
+            "BU": mapped_data.get("BU", ""),
+            "Branch": mapped_data.get("Branch", ""),
+            "Status": "Active",
+            "CreateDate": datetime.date.today().strftime('%Y-%m-%d')
         }
         res = requests.post(webhook_url, json=payload, headers={"Content-Type": "application/json"}, timeout=15)
         if res.status_code in [200, 202]:
@@ -486,12 +504,12 @@ if image is not None:
 
     if st.button("🤖 2. ประมวลผลและดึงข้อมูลจากภาพ (Extract Data)", type="primary"):
         with st.spinner("⏳ กำลังวิเคราะห์ภาพด้วย Gemini 2.0 Flash Vision AI..."):
-            extracted = extract_with_gemini_vision(image, gemini_key)
+            extracted, err_msg = extract_with_gemini_vision(image, gemini_key)
             if extracted:
                 st.session_state["extracted"] = extracted
                 st.success("✨ อ่านข้อมูลจากภาพด้วย Vision AI สำเร็จเป๊ะ 100%!")
             else:
-                st.error("⚠️ ไม่สามารถสกัดข้อมูลจากภาพด้วย API Key ที่ระบุได้ กรุณาตรวจสอบ API Key")
+                st.error(f"⚠️ {err_msg}")
 
 # --- Step 2: Review & Edit Data Form ---
 if "extracted" in st.session_state:
@@ -587,6 +605,16 @@ Password:  {edit_email_password}
         
         if ok_excel:
             st.success(msg_excel)
+            target_save_file = excel_path if os.path.exists(excel_path) else "Template Column Excel Summary User.xlsx"
+            if os.path.exists(target_save_file):
+                with open(target_save_file, "rb") as f:
+                    st.download_button(
+                        label="📥 ดาวน์โหลดไฟล์ Excel ที่อัปเดตแล้ว (Download Excel)",
+                        data=f,
+                        file_name="Template Column Excel Summary User.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        use_container_width=True
+                    )
         else:
             st.error(msg_excel)
 
