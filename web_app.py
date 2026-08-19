@@ -151,7 +151,7 @@ def extract_with_gemini_vision(img, api_key):
         from google.genai import types
         
         client = genai.Client(api_key=clean_key)
-        models_to_try = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-flash-latest']
+        models_to_try = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.6-flash']
         for m_name in models_to_try:
             try:
                 response = client.models.generate_content(
@@ -190,21 +190,18 @@ def extract_with_gemini_vision(img, api_key):
     # 2. REST API Fallback (HTTP Direct)
     try:
         buffered = io.BytesIO()
-        img.convert('RGB').save(buffered, format="JPEG", quality=90)
+        img.convert('RGB').save(buffered, format="JPEG", quality=85)
         img_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
         
         endpoints = [
-            ("v1beta", "gemini-2.0-flash"),
-            ("v1beta", "gemini-1.5-flash"),
-            ("v1beta", "gemini-2.0-flash-exp"),
-            ("v1", "gemini-1.5-flash")
+            ("v1beta", "gemini-3.6-flash"),
+            ("v1beta", "gemini-3.5-flash"),
+            ("v1beta", "gemini-flash-latest")
         ]
         
         for api_ver, model_name in endpoints:
             url = f"https://generativelanguage.googleapis.com/{api_ver}/models/{model_name}:generateContent?key={clean_key}"
-            headers = {"Content-Type": "application/json"}
-            if clean_key.startswith("AQ."):
-                headers["Authorization"] = f"Bearer {clean_key}"
+            headers = {"Content-Type": "application/json", "x-goog-api-key": clean_key}
                 
             payload = {
                 "contents": [
@@ -225,7 +222,7 @@ def extract_with_gemini_vision(img, api_key):
                 }
             }
             
-            res = requests.post(url, json=payload, headers=headers, timeout=15)
+            res = requests.post(url, json=payload, headers=headers, timeout=25)
             if res.status_code == 200:
                 result_json = res.json()
                 raw_text = result_json['candidates'][0]['content']['parts'][0]['text'].strip()
