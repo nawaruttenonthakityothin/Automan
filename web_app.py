@@ -24,11 +24,26 @@ st.set_page_config(
 # ==========================================
 COMPANY_OPTIONS = [
     "",
+    "Belfort Automobile (Thailand) Co., Ltd.",
+    "Gaydon Motor Sales and Services Co., Ltd.",
+    "Goodwood Autowork Co., Ltd.",
+    "Howden Maxi Insurance Broker Co., Ltd.",
+    "i24 Co., Ltd.",
+    "Lion Automobile Co., Ltd.",
     "Master Car Rental Co., Ltd.",
+    "Master Driver & Services (Thailand) Co., Ltd.",
+    "Master Group Corporation (Laos) Co., Ltd.",
+    "Master Motor Services (Thailand) Co., Ltd.",
+    "MGC Aviation and Charter Service (Asia) Co., Ltd.",
+    "MGC Marine & Charter (Asia) Co., Ltd.",
     "Millennium Auto Group Co., Ltd.",
+    "Millennium Group Corporation (ASIA) Co., Ltd.",
+    "Modena Motorwork Co., Ltd.",
+    "Summit Honda Automobile Co., Ltd.",
     "US Motorbike Co., Ltd.",
-    "I24 Co.,Ltd.",
-    "Millennium Group Corporation (Asia) Public Company Limited"
+    "X Mobility Plus Co.,Ltd",
+    "X Mobility Thailand",
+    "Ze Mobility Plus co., ltd"
 ]
 
 BRANCH_OPTIONS = [
@@ -130,9 +145,39 @@ def derive_company_and_bu(company_input, email_input):
         elif "us motorbike" in comp_lower or "harley" in comp_lower:
             return "US Motorbike Co., Ltd.", "Harley"
         elif "i24" in comp_lower:
-            return "I24 Co.,Ltd.", "I24"
-        elif "millennium group corporation" in comp_lower or "mgc" in comp_lower:
-            return "Millennium Group Corporation (Asia) Public Company Limited", "MGC"
+            return "i24 Co., Ltd.", "I24"
+        elif "belfort" in comp_lower or "jeep" in comp_lower or "peugeot" in comp_lower:
+            return "Belfort Automobile (Thailand) Co., Ltd.", "Belfort"
+        elif "gaydon" in comp_lower or "aston martin" in comp_lower:
+            return "Gaydon Motor Sales and Services Co., Ltd.", "Gaydon"
+        elif "goodwood" in comp_lower or "rolls" in comp_lower:
+            return "Goodwood Autowork Co., Ltd.", "Goodwood"
+        elif "howden" in comp_lower or "maxi" in comp_lower:
+            return "Howden Maxi Insurance Broker Co., Ltd.", "Howden Maxi"
+        elif "lion automobile" in comp_lower or "lion" in comp_lower:
+            return "Lion Automobile Co., Ltd.", "Lion"
+        elif "master driver" in comp_lower or "mds" in comp_lower:
+            return "Master Driver & Services (Thailand) Co., Ltd.", "MDS"
+        elif "laos" in comp_lower:
+            return "Master Group Corporation (Laos) Co., Ltd.", "MGC Laos"
+        elif "master motor" in comp_lower or "mms" in comp_lower:
+            return "Master Motor Services (Thailand) Co., Ltd.", "MMS"
+        elif "aviation" in comp_lower:
+            return "MGC Aviation and Charter Service (Asia) Co., Ltd.", "MGC Aviation"
+        elif "marine" in comp_lower or "charter" in comp_lower:
+            return "MGC Marine & Charter (Asia) Co., Ltd.", "MGC Marine"
+        elif "modena" in comp_lower or "maserati" in comp_lower:
+            return "Modena Motorwork Co., Ltd.", "Modena"
+        elif "summit honda" in comp_lower or "summit" in comp_lower or "honda" in comp_lower:
+            return "Summit Honda Automobile Co., Ltd.", "Summit Honda"
+        elif "x mobility plus" in comp_lower or "x-mobility plus" in comp_lower:
+            return "X Mobility Plus Co.,Ltd", "XP"
+        elif "x mobility" in comp_lower or "x-mobility" in comp_lower:
+            return "X Mobility Thailand", "X Mobility"
+        elif "ze mobility" in comp_lower or "ze-mobility" in comp_lower or "zeekr" in comp_lower:
+            return "Ze Mobility Plus co., ltd", "Ze Mobility"
+        elif "millennium group" in comp_lower or "mgc" in comp_lower:
+            return "Millennium Group Corporation (ASIA) Co., Ltd.", "MGC"
             
     if '@' in email_lower:
         domain = email_lower.split('@')[-1].strip()
@@ -337,8 +382,11 @@ def process_mapping(extracted_data):
         "Position": extracted_data.get("Position", ""),
         "Company": company,
         "BU": bu,
-        "Role ID": "",
+        "Area": extracted_data.get("Area", ""),
+        "Role ID": extracted_data.get("Role ID", ""),
         "Branch": branch_eng,
+        "Team": extracted_data.get("Team", ""),
+        "Sub-Team": extracted_data.get("Sub-Team", ""),
         "x": "",
         "Type": "",
         "Status": "Active", 
@@ -419,7 +467,11 @@ def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_us
             "Position": raw_data.get("Position", ""),
             "Company": raw_data.get("Company", ""),
             "BU": mapped_data.get("BU", ""),
+            "Area": mapped_data.get("Area", ""),
+            "RoleID": mapped_data.get("Role ID", ""),
             "Branch": mapped_data.get("Branch", ""),
+            "Team": mapped_data.get("Team", ""),
+            "SubTeam": mapped_data.get("Sub-Team", ""),
             "Status": "Active",
             "CreateDate": datetime.date.today().strftime('%Y-%m-%d'),
             "SendEmail": send_email,
