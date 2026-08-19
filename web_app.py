@@ -422,7 +422,8 @@ def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_us
             "Branch": mapped_data.get("Branch", ""),
             "Status": "Active",
             "CreateDate": datetime.date.today().strftime('%Y-%m-%d'),
-            "SendEmail": send_email
+            "SendEmail": send_email,
+            "SendEmailText": "true" if send_email else "false"
         }
         res = requests.post(webhook_url, json=payload, headers={"Content-Type": "application/json"}, timeout=15)
         if res.status_code in [200, 202]:
