@@ -32,10 +32,46 @@ COMPANY_OPTIONS = [
 ]
 
 BRANCH_OPTIONS = [
-    "", "กรุงเทพมหานคร", "พระราม 3", "พระราม 4", "ลาดพร้าว", 
+    "", "กรุงเทพมหานคร", "สำนักงานใหญ่", "พระราม 3", "พระราม 4", "ลาดพร้าว", "รามคำแหง",
     "อุดรธานี", "ภูเก็ต", "หาดใหญ่", "อุบลราชธานี", 
     "สุราษฎร์ธานี", "พัทยา", "เชียงใหม่", "สยามพารากอน", "ไอคอนสยาม"
 ]
+
+def map_branch_name(branch_str):
+    if not branch_str:
+        return ""
+    b_lower = str(branch_str).lower().strip()
+    if "ladprao" in b_lower or "ลาดพร้าว" in b_lower:
+        return "ลาดพร้าว"
+    elif "rama 3" in b_lower or "พระราม 3" in b_lower or "rama3" in b_lower:
+        return "พระราม 3"
+    elif "rama 4" in b_lower or "พระราม 4" in b_lower or "rama4" in b_lower:
+        return "พระราม 4"
+    elif "phuket" in b_lower or "ภูเก็ต" in b_lower:
+        return "ภูเก็ต"
+    elif "udon" in b_lower or "อุดร" in b_lower:
+        return "อุดรธานี"
+    elif "hatyai" in b_lower or "hat yai" in b_lower or "หาดใหญ่" in b_lower:
+        return "หาดใหญ่"
+    elif "ubon" in b_lower or "อุบล" in b_lower:
+        return "อุบลราชธานี"
+    elif "surat" in b_lower or "สุราษฎร์" in b_lower:
+        return "สุราษฎร์ธานี"
+    elif "pattaya" in b_lower or "พัทยา" in b_lower:
+        return "พัทยา"
+    elif "chiangmai" in b_lower or "chiang mai" in b_lower or "เชียงใหม่" in b_lower:
+        return "เชียงใหม่"
+    elif "paragon" in b_lower or "พารากอน" in b_lower:
+        return "สยามพารากอน"
+    elif "icon" in b_lower or "ไอคอน" in b_lower:
+        return "ไอคอนสยาม"
+    elif "head office" in b_lower or "สำนักงานใหญ่" in b_lower or "head" in b_lower:
+        return "สำนักงานใหญ่"
+    elif "bangkok" in b_lower or "กรุงเทพ" in b_lower or "bkk" in b_lower:
+        return "กรุงเทพมหานคร"
+    elif "ramkhamhaeng" in b_lower or "รามคำแหง" in b_lower:
+        return "รามคำแหง"
+    return branch_str
 
 COMPANY_BU_MAPPING = {
     "mastercarrental.com": {"Company": "Master Car Rental Co., Ltd.", "BU": "MCR"},
@@ -140,7 +176,7 @@ def extract_with_gemini_vision(img, api_key):
   "Email": "Email (ถ้าไม่มีในภาพให้เป็นว่างเปล่า \"\")",
   "Position": "กลุ่มผู้ใช้ สำหรับ Pandora (เช่น Accounting + Price) หรือ Role สำหรับ Red plate หรือ Position/User Type สำหรับระบบอื่น",
   "Company": "ชื่อบริษัท (ถ้าไม่มีในภาพให้เป็นว่างเปล่า \"\")",
-  "Branch": "ชื่อสาขาภาษาไทย (ถ้าไม่มีในภาพให้เป็นว่างเปล่า \"\")"
+  "Branch": "ชื่อสาขาจากภาพ เช่น Ladprao, Head Office, พระราม 3, ลาดพร้าว, รามคำแหง (ถ้าไม่มีในภาพให้เป็น \"\")"
 }"""
 
     last_err = ""
@@ -184,6 +220,10 @@ def extract_with_gemini_vision(img, api_key):
                         parsed_data["Full Name Eng"] = nth
                         parsed_data["Full Name Thai"] = ""
                 
+                branch = str(parsed_data.get("Branch", "")).strip()
+                if branch:
+                    parsed_data["Branch"] = map_branch_name(branch)
+
                 email = str(parsed_data.get("Email", "")).strip()
                 if email:
                     parsed_data["Email"] = fix_email_domain(email)
@@ -253,9 +293,9 @@ def extract_with_gemini_vision(img, api_key):
                     if not nth and any('\u0e00' <= c <= '\u0e7f' for c in neng):
                         parsed_data["Full Name Thai"] = neng
                         parsed_data["Full Name Eng"] = ""
-                    elif nth and not any('\u0e00' <= c <= '\u0e7f' for c in nth) and not neng:
-                        parsed_data["Full Name Eng"] = nth
-                        parsed_data["Full Name Thai"] = ""
+                branch = str(parsed_data.get("Branch", "")).strip()
+                if branch:
+                    parsed_data["Branch"] = map_branch_name(branch)
                     
                 email = str(parsed_data.get("Email", "")).strip()
                 if email:
@@ -340,7 +380,7 @@ def export_to_excel(excel_row, excel_filename):
     except Exception as e:
         return False, f"เกิดข้อผิดพลาดในการบันทึก Excel: {e}"
 
-def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_username=None, custom_password=None):
+def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_username=None, custom_password=None, send_email=True):
     if not webhook_url:
         return False, "ไม่ได้ระบุ Webhook URL"
     try:
@@ -381,7 +421,8 @@ def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_us
             "BU": mapped_data.get("BU", ""),
             "Branch": mapped_data.get("Branch", ""),
             "Status": "Active",
-            "CreateDate": datetime.date.today().strftime('%Y-%m-%d')
+            "CreateDate": datetime.date.today().strftime('%Y-%m-%d'),
+            "SendEmail": send_email
         }
         res = requests.post(webhook_url, json=payload, headers={"Content-Type": "application/json"}, timeout=15)
         if res.status_code in [200, 202]:
@@ -546,13 +587,19 @@ if "extracted" in st.session_state:
         edit_app = st.selectbox("Application", ["VSM", "E-Travelling", "Forma", "Red plate", "Pandora"], index=["VSM", "E-Travelling", "Forma", "Red plate", "Pandora"].index(app_val) if app_val in ["VSM", "E-Travelling", "Forma", "Red plate", "Pandora"] else 0)
         edit_neng = st.text_input("Full Name Eng (ชื่ออังกฤษ)", value=neng_val)
         edit_email = st.text_input("Email", value=email_val)
-        edit_company = st.selectbox("Company (เลือกบริษัท)", COMPANY_OPTIONS, index=COMPANY_OPTIONS.index(comp_val) if comp_val in COMPANY_OPTIONS else 0)
+        current_comp_options = list(COMPANY_OPTIONS)
+        if comp_val and comp_val not in current_comp_options:
+            current_comp_options.append(comp_val)
+        edit_company = st.selectbox("Company (เลือกบริษัท)", current_comp_options, index=current_comp_options.index(comp_val) if comp_val in current_comp_options else 0)
 
     with col2:
         edit_uid = st.text_input("App user ID (รหัสผู้ใช้)", value=uid_val)
         edit_nth = st.text_input("Full Name Thai (ชื่อไทย)", value=nth_val)
         edit_pos = st.text_input("Position (ตำแหน่ง/กลุ่มผู้ใช้)", value=pos_val)
-        edit_branch = st.selectbox("Branch (เลือกสาขา)", BRANCH_OPTIONS, index=BRANCH_OPTIONS.index(branch_val) if branch_val in BRANCH_OPTIONS else 0)
+        current_branch_options = list(BRANCH_OPTIONS)
+        if branch_val and branch_val not in current_branch_options:
+            current_branch_options.append(branch_val)
+        edit_branch = st.selectbox("Branch (เลือกสาขา)", current_branch_options, index=current_branch_options.index(branch_val) if branch_val in current_branch_options else 0)
 
     st.markdown("#### 🔑 ข้อมูล Username & Password สำหรับส่ง Email")
     col_un, col_pw = st.columns(2)
@@ -602,8 +649,16 @@ Password:  {edit_email_password}
 
     st.code(email_preview_text, language="text")
 
-    # --- Step 4: Confirm Action Button ---
-    if st.button("✅ 5. ยืนยันบันทึกข้อมูลลง Excel & ส่ง Email", type="primary", use_container_width=True):
+    # --- Step 4: Confirm Action Buttons ---
+    st.markdown("---")
+    st.subheader("🚀 5. เลือกคำสั่งบันทึกข้อมูล (Save & Send Options)")
+    
+    col_act1, col_act2 = st.columns(2)
+    btn_excel_only = col_act1.button("📊 1. บันทึกลง Excel อย่างเดียว (ไม่ส่ง Email)", use_container_width=True)
+    btn_excel_email = col_act2.button("📧 2. บันทึกลง Excel และส่ง Email", type="primary", use_container_width=True)
+
+    if btn_excel_only or btn_excel_email:
+        should_send_email = True if btn_excel_email else False
         reviewed_data = {
             "Application": edit_app,
             "App user ID": edit_email_username,
@@ -637,10 +692,14 @@ Password:  {edit_email_password}
             ok_wh, msg_wh = trigger_power_automate_webhook(
                 webhook_url, reviewed_data, mapped_data,
                 custom_username=edit_email_username,
-                custom_password=edit_email_password
+                custom_password=edit_email_password,
+                send_email=should_send_email
             )
             if ok_wh:
-                st.info(msg_wh)
+                if should_send_email:
+                    st.info(f"{msg_wh} (โหมด: บันทึก Excel + ส่ง Email เรียบร้อย)")
+                else:
+                    st.info(f"{msg_wh} (โหมด: บันทึก Excel อย่างเดียว - ไม่ได้ส่ง Email)")
             else:
                 st.warning(msg_wh)
         
