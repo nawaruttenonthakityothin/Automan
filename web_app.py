@@ -135,8 +135,8 @@ def extract_with_gemini_vision(img, api_key):
   "Application": "Pandora" หรือ "Red plate" หรือ "Forma" หรือ "VSM" หรือ "E-Travelling",
   "App user ID": "รหัสผู้ใช้ สำหรับ Pandora หรือ Username สำหรับ Red plate หรือ Login สำหรับ Forma หรือ User Login สำหรับ VSM หรือ Employee Code สำหรับ E-Travelling",
   "Password": "รหัสผ่าน สำหรับ Pandora (เช่น p@ssw0rdcha) (ถ้าไม่มีให้เป็นว่างเปล่า \"\")",
-  "Full Name Eng": "ชื่อผู้ใช้ ถ้าเป็นภาษาอังกฤษ สำหรับ Pandora หรือ First Name เว้นวรรค Last Name สำหรับ Red plate หรือชื่อภาษาอังกฤษระบบอื่น ตัดคำนำหน้าออก",
-  "Full Name Thai": "ชื่อผู้ใช้ ถ้าเป็นภาษาไทย สำหรับ Pandora (เช่น ชนะ แซ่จิ๋ว) หรือชื่อภาษาไทยระบบอื่น (ถ้าไม่มีให้เป็นว่างเปล่า \"\")",
+  "Full Name Eng": "ชื่อ-นามสกุลภาษาอังกฤษ ถ้าเป็นภาษาอังกฤษล้วน (ตัดคำนำหน้าออก) ถ้าไม่มีให้เป็น \"\"",
+  "Full Name Thai": "ชื่อ-นามสกุลภาษาไทย สำหรับ Red plate ให้นำ First Name เว้นวรรค Last Name (หรือ Display Name เช่น กัณฑิชา ลมหวล) มาใส่ช่องนี้ หรือชื่อไทยสำหรับระบบอื่น (ตัดคำนำหน้าออก) ถ้าไม่มีให้เป็น \"\"",
   "Email": "Email (ถ้าไม่มีในภาพให้เป็นว่างเปล่า \"\")",
   "Position": "กลุ่มผู้ใช้ สำหรับ Pandora (เช่น Accounting + Price) หรือ Role สำหรับ Red plate หรือ Position/User Type สำหรับระบบอื่น",
   "Company": "ชื่อบริษัท (ถ้าไม่มีในภาพให้เป็นว่างเปล่า \"\")",
@@ -172,10 +172,17 @@ def extract_with_gemini_vision(img, api_key):
                         user_id = user_id[:-3] + '.' + user_id[-3:]
                     parsed_data["App user ID"] = user_id
                 elif app_name == "Red plate":
-                    parsed_data["Full Name Thai"] = ""
                     pos = str(parsed_data.get("Position", "")).strip()
                     if "sales person" in pos.lower():
                         parsed_data["Position"] = "Sales Consultant"
+                    nth = str(parsed_data.get("Full Name Thai", "")).strip()
+                    neng = str(parsed_data.get("Full Name Eng", "")).strip()
+                    if not nth and any('\u0e00' <= c <= '\u0e7f' for c in neng):
+                        parsed_data["Full Name Thai"] = neng
+                        parsed_data["Full Name Eng"] = ""
+                    elif nth and not any('\u0e00' <= c <= '\u0e7f' for c in nth) and not neng:
+                        parsed_data["Full Name Eng"] = nth
+                        parsed_data["Full Name Thai"] = ""
                 
                 email = str(parsed_data.get("Email", "")).strip()
                 if email:
@@ -237,7 +244,18 @@ def extract_with_gemini_vision(img, api_key):
                     user_id = user_id.replace('.', '')
                     if len(user_id) > 3:
                         user_id = user_id[:-3] + '.' + user_id[-3:]
-                    parsed_data["App user ID"] = user_id
+                elif app_name == "Red plate":
+                    pos = str(parsed_data.get("Position", "")).strip()
+                    if "sales person" in pos.lower():
+                        parsed_data["Position"] = "Sales Consultant"
+                    nth = str(parsed_data.get("Full Name Thai", "")).strip()
+                    neng = str(parsed_data.get("Full Name Eng", "")).strip()
+                    if not nth and any('\u0e00' <= c <= '\u0e7f' for c in neng):
+                        parsed_data["Full Name Thai"] = neng
+                        parsed_data["Full Name Eng"] = ""
+                    elif nth and not any('\u0e00' <= c <= '\u0e7f' for c in nth) and not neng:
+                        parsed_data["Full Name Eng"] = nth
+                        parsed_data["Full Name Thai"] = ""
                     
                 email = str(parsed_data.get("Email", "")).strip()
                 if email:
