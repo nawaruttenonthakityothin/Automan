@@ -672,36 +672,15 @@ Password:  {edit_email_password}
         }
         
         mapped_data = process_mapping(reviewed_data)
-        ok_excel, msg_excel = export_to_excel(mapped_data, excel_path)
-        
-        if ok_excel:
-            st.success(msg_excel)
-            target_save_file = excel_path if os.path.exists(excel_path) else "Template Column Excel Summary User.xlsx"
-            if os.path.exists(target_save_file):
-                with open(target_save_file, "rb") as f:
-                    st.download_button(
-                        label="📥 ดาวน์โหลดไฟล์ Excel ที่อัปเดตแล้ว (Download Excel)",
-                        data=f,
-                        file_name="Template Column Excel Summary User.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        use_container_width=True
-                    )
-        else:
-            st.error(msg_excel)
+        export_to_excel(mapped_data, excel_path)
 
         if webhook_url:
-            ok_wh, msg_wh = trigger_power_automate_webhook(
+            trigger_power_automate_webhook(
                 webhook_url, reviewed_data, mapped_data,
                 custom_username=edit_email_username,
                 custom_password=edit_email_password,
                 send_email=should_send_email
             )
-            if ok_wh:
-                if should_send_email:
-                    st.info(f"{msg_wh} (โหมด: บันทึก Excel + ส่ง Email เรียบร้อย)")
-                else:
-                    st.info(f"{msg_wh} (โหมด: บันทึก Excel อย่างเดียว - ไม่ได้ส่ง Email)")
-            else:
-                st.warning(msg_wh)
         
+        st.success("✅ ดำเนินการสำเร็จ!")
         st.balloons()
