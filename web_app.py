@@ -7,6 +7,7 @@ import datetime
 import requests
 from PIL import Image
 import openpyxl
+import pandas as pd
 import streamlit as st
 
 # ==========================================
@@ -930,49 +931,114 @@ with tab_settings:
     ])
 
     # ------------------------------------------
-    # Sub-tab 1: Company & BU (Management Table + Live Search + Action Badges + Micro-interactions)
+    # Sub-tab 1: Company & BU (Interactive Data Grid with Double-Click Inline Editing)
     # ------------------------------------------
     with subtab_comp:
         st.markdown("### 🏢 จัดการรายชื่อบริษัท และตัวย่อ BU")
-        st.caption("ระบบล็อก **1 บริษัท = 1 BU เสมอ** สามารถค้นหา กรอง และจัดการข้อมูลได้แบบเรียลไทม์")
+        st.info("💡 **วิธีแก้ไข**: ดับเบิ้ลคลิก (Double-click) ที่ช่อง **ชื่อบริษัท** หรือ **ตัวย่อ BU** ในตารางด้านล่างเพื่อพิมพ์แก้ไขตัวสะกดได้ทันทีในคลิกเดียว หรือกด `+` แถวล่างสุดเพื่อเพิ่มแถวใหม่")
 
         companies_list = master_data.get("companies", [])
+        
+        # Prepare DataFrame
+        df_comp = pd.DataFrame(companies_list)
+        if df_comp.empty or "Company" not in df_comp.columns or "BU" not in df_comp.columns:
+            df_comp = pd.DataFrame(columns=["Company", "BU"])
 
         # --- Top Search & Sort Bar ---
         col_search, col_sort = st.columns([2.5, 1.2])
         with col_search:
             search_comp_txt = st.text_input(
-                "🔍 ค้นหาชื่อบริษัท หรือตัวย่อ BU...",
-                placeholder="พิมพ์คำค้นหา เช่น Honda, MCR, BMW...",
+                "🔍 ค้นหาในตาราง...",
+                placeholder="พิมพ์คำค้นหาเพื่อกรองดู เช่น Honda, MCR, BMW...",
                 key="comp_search_input"
             )
         with col_sort:
             sort_comp_by = st.selectbox(
                 "🔃 เรียงตาม",
-                ["ชื่อบริษัท (A-Z)", "ชื่อบริษัท (Z-A)", "ตัวย่อ BU (A-Z)", "ตัวย่อ BU (Z-A)"],
+                ["ลำดับเริ่มต้น", "ชื่อบริษัท (A-Z)", "ชื่อบริษัท (Z-A)", "ตัวย่อ BU (A-Z)", "ตัวย่อ BU (Z-A)"],
                 key="comp_sort_select"
             )
 
         # Filtering
-        filtered_comps = companies_list
+        display_df = df_comp.copy()
         if search_comp_txt.strip():
             q = search_comp_txt.strip().lower()
-            filtered_comps = [c for c in companies_list if q in c["Company"].lower() or q in c["BU"].lower()]
+            display_df = display_df[
+                display_df["Company"].astype(str).str.lower().str.contains(q) |
+                display_df["BU"].astype(str).str.lower().str.contains(q)
+            ]
 
         # Sorting
         if sort_comp_by == "ชื่อบริษัท (A-Z)":
-            filtered_comps = sorted(filtered_comps, key=lambda x: x["Company"].lower())
+            display_df = display_df.sort_values(by="Company", key=lambda col: col.str.lower())
         elif sort_comp_by == "ชื่อบริษัท (Z-A)":
-            filtered_comps = sorted(filtered_comps, key=lambda x: x["Company"].lower(), reverse=True)
+            display_df = display_df.sort_values(by="Company", key=lambda col: col.str.lower(), ascending=False)
         elif sort_comp_by == "ตัวย่อ BU (A-Z)":
-            filtered_comps = sorted(filtered_comps, key=lambda x: x["BU"].lower())
+            display_df = display_df.sort_values(by="BU", key=lambda col: col.str.lower())
         elif sort_comp_by == "ตัวย่อ BU (Z-A)":
-            filtered_comps = sorted(filtered_comps, key=lambda x: x["BU"].lower(), reverse=True)
+            display_df = display_df.sort_values(by="BU", key=lambda col: col.str.lower(), ascending=False)
 
-        st.caption(f"📊 แสดง **{len(filtered_comps)}** จากทั้งหมด **{len(companies_list)}** บริษัท")
+        st.caption(f"📊 แสดง **{len(display_df)}** จากทั้งหมด **{len(df_comp)}** บริษัท (ดับเบิ้ลคลิกแก้ไขในตาราง แล้วกดปุ่มบันทึกด้านล่าง)")
 
-        # --- Add / Edit Company Drawer with Real-Time Validation ---
-        with st.expander("➕ เพิ่มบริษัทใหม่ / แก้ไขตัวย่อ BU", expanded=False):
+        # --- Interactive Data Editor Grid ---
+        edited_df = st.data_editor(
+            display_df,
+            column_config={
+                "Company": st.column_config.TextColumn(
+                    "🏢 Company (ชื่อบริษัท) [ดับเบิ้ลคลิกเพื่อแก้ไข]",
+                    help="ดับเบิ้ลคลิกเพื่อแก้ไขตัวสะกดชื่อบริษัท",
+                    required=True,
+                    width="large"
+                ),
+                "BU": st.column_config.TextColumn(
+                    "🏷️ BU (ตัวย่อ) [ดับเบิ้ลคลิกเพื่อแก้ไข]",
+                    help="ดับเบิ้ลคลิกเพื่อแก้ไขตัวย่อ BU",
+                    required=True,
+                    width="medium"
+                ),
+            },
+            num_rows="dynamic",
+            use_container_width=True,
+            hide_index=False,
+            key="company_data_editor_grid"
+        )
+
+        col_save_grid, col_reset_grid = st.columns([2, 1])
+        with col_save_grid:
+            if st.button("💾 บันทึกการแก้ไข Company & BU ทั้งหมด", type="primary", use_container_width=True, key="btn_save_company_grid"):
+                # Clean and validate edited data
+                new_comp_list = []
+                has_duplicate = False
+                seen_names = set()
+                
+                target_records = edited_df.dropna(subset=["Company", "BU"]).to_dict(orient="records")
+                
+                for r in target_records:
+                    c_name = str(r.get("Company", "")).strip()
+                    bu_name = str(r.get("BU", "")).strip()
+                    if c_name and bu_name:
+                        if c_name.lower() in seen_names:
+                            has_duplicate = True
+                        seen_names.add(c_name.lower())
+                        new_comp_list.append({"Company": c_name, "BU": bu_name})
+                
+                if not new_comp_list:
+                    st.error("⚠️ ข้อมูลบริษัทต้องไม่เป็นค่าว่าง")
+                elif has_duplicate:
+                    st.warning("⚠️ มีชื่อบริษัทซ้ำกันในตาราง (ระบบล็อก 1 บริษัท = 1 BU กรุณาตรวจสอบชื่อบริษัท)")
+                else:
+                    master_data["companies"] = new_comp_list
+                    if save_master_data(master_data):
+                        st.toast("✅ บันทึกการแก้ไข Company & BU สำเร็จเรียบร้อย!", icon="💾")
+                        st.rerun()
+
+        with col_reset_grid:
+            if st.button("🔄 โหลดข้อมูลบริษัทล่าสุด", use_container_width=True, key="btn_reload_company_grid"):
+                st.toast("🔄 โหลดข้อมูลล่าสุดเรียบร้อย", icon="🔄")
+                st.rerun()
+
+        # --- Optional Quick Add Drawer with Real-Time Validation ---
+        with st.expander("➕ หรือเพิ่มบริษัทใหม่ผ่านฟอร์มด่วน", expanded=False):
             col_in_c1, col_in_c2 = st.columns([2, 1])
             with col_in_c1:
                 input_comp_name = st.text_input("ชื่อบริษัท (Company Name)*", placeholder="เช่น Test Automobile Co., Ltd.", key="input_comp_name_field")
@@ -987,7 +1053,7 @@ with tab_settings:
                 else:
                     st.success(f"✅ **ชื่อบริษัทใหม่**: พร้อมเพิ่มเข้าสู่ระบบ (1 บริษัท = 1 BU)")
 
-            if st.button("💾 บันทึกบริษัท & BU", type="primary", key="btn_save_comp_action"):
+            if st.button("➕ เพิ่มบริษัทเข้าตาราง", type="secondary", key="btn_save_comp_action"):
                 if not input_comp_name.strip() or not input_bu_name.strip():
                     st.error("⚠️ กรุณากรอกทั้งชื่อบริษัทและตัวย่อ BU ให้ครบถ้วน")
                 else:
@@ -1005,34 +1071,6 @@ with tab_settings:
                     master_data["companies"] = companies_list
                     if save_master_data(master_data):
                         st.toast(f"✅ บันทึกบริษัท '{c_clean}' (BU: {bu_clean}) สำเร็จ!", icon="🏢")
-                        st.rerun()
-
-        # --- Management Table with Row-Level Badges & Actions ---
-        st.markdown("---")
-        
-        # Table Header
-        h_col1, h_col2, h_col3, h_col4 = st.columns([0.6, 3.8, 1.4, 1.2])
-        h_col1.markdown("**#**")
-        h_col2.markdown("**ชื่อบริษัท (Company Name)**")
-        h_col3.markdown("**🏷️ ตัวย่อ BU**")
-        h_col4.markdown("**การจัดการ (Action)**")
-
-        st.markdown("<hr style='margin-top:0;margin-bottom:8px;'>", unsafe_allow_html=True)
-
-        if not filtered_comps:
-            st.info("🔍 ไม่พบบริษัทที่ตรงกับคำค้นหา")
-        else:
-            for idx, c_entry in enumerate(filtered_comps):
-                row_c1, row_c2, row_c3, row_c4 = st.columns([0.6, 3.8, 1.4, 1.2])
-                row_c1.write(f"**{idx + 1}**")
-                row_c2.write(f"🏢 {c_entry['Company']}")
-                row_c3.markdown(f"`🏷️ {c_entry['BU']}`")
-                
-                # Action Button: Delete
-                if row_c4.button("🗑️ ลบ", key=f"del_comp_btn_{c_entry['Company']}", help=f"ลบบริษัท {c_entry['Company']}"):
-                    master_data["companies"] = [item for item in companies_list if item["Company"] != c_entry["Company"]]
-                    if save_master_data(master_data):
-                        st.toast(f"🗑️ ลบบริษัท '{c_entry['Company']}' เรียบร้อยแล้ว", icon="🗑️")
                         st.rerun()
 
     # ------------------------------------------
