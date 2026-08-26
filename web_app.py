@@ -52,6 +52,11 @@ BRANCH_OPTIONS = [
     "สุราษฎร์ธานี", "พัทยา", "เชียงใหม่", "สยามพารากอน", "ไอคอนสยาม"
 ]
 
+OPERATOR_OPTIONS = [
+    "nawarutte.non@i24.co.th",
+    "pawitporn.sae@i24.co.th"
+]
+
 def map_branch_name(branch_str):
     if not branch_str:
         return ""
@@ -132,6 +137,36 @@ def get_default_password_for_app(app_name, user_id, email, extracted_pwd=""):
         return "Init123456"
     else:
         return user_id
+
+def build_email_body(app_name, user_id, password_str, link_str):
+    if app_name in ["Forma", "Pandora"]:
+        intro = f"ให้เข้าใช้งาน {app_name} โดย User & Password ตามด้านล่างนี้ครับ"
+    elif app_name == "Red plate":
+        intro = "ให้เข้าใช้งาน Red plate โดย User & Password ตามด้านล่างนี้ครับ"
+    else:
+        intro = "ให้เข้าใช้งานโดย User & Password ตามด้านล่างนี้ครับ"
+
+    text_lines = [
+        "เรียน ผู้ใช้งานระบบ",
+        intro,
+        f"User: {user_id}",
+        f"Password: {password_str}"
+    ]
+    if link_str:
+        text_lines.append(f"Link: {link_str}")
+    plain_text = "\n".join(text_lines)
+
+    html_parts = [
+        "<p>เรียน ผู้ใช้งานระบบ</p>",
+        f"<p>{intro}</p>",
+        f"<p><b>User:</b> {user_id}<br><b>Password:</b> {password_str}"
+    ]
+    if link_str:
+        html_parts.append(f"<br><b>Link:</b> <a href=\"{link_str}\">{link_str}</a>")
+    html_parts.append("</p>")
+    html_body = "".join(html_parts)
+
+    return plain_text, html_body
 
 def derive_company_and_bu(company_input, email_input):
     email_lower = (email_input or "").lower()
@@ -429,7 +464,7 @@ def export_to_excel(excel_row, excel_filename):
     except Exception as e:
         return False, f"เกิดข้อผิดพลาดในการบันทึก Excel: {e}"
 
-def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_username=None, custom_password=None, send_email=True):
+def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_username=None, custom_password=None, send_email=True, operator="nawarutte.non@i24.co.th"):
     if not webhook_url:
         return False, "ไม่ได้ระบุ Webhook URL"
     try:
@@ -456,12 +491,17 @@ def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_us
         elif app_name == "Red plate":
             link_str = "https://redplate-frontend.azurewebsites.net/signin/?redirect_url=%2Freport%2F%3Ftype%3Dred-plate-transaction"
 
+        plain_body, html_body = build_email_body(app_name, user_id, password_str, link_str)
+
         payload = {
             "Application": app_name,
             "Email": email_to,
             "AppUserID": user_id,
             "Password": password_str,
             "Link": link_str,
+            "LinkText": f"Link: {link_str}" if link_str else "",
+            "EmailBody": plain_body,
+            "EmailBodyHtml": html_body,
             "Subject": f"ข้อมูลการเข้าระบบ {app_name}",
             "FullNameThai": raw_data.get("Full Name Thai", ""),
             "FullNameEng": raw_data.get("Full Name Eng", ""),
@@ -477,7 +517,8 @@ def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_us
             "Status": "Active",
             "CreateDate": datetime.date.today().strftime('%Y-%m-%d'),
             "SendEmail": send_email,
-            "SendEmailText": "true" if send_email else "false"
+            "SendEmailText": "true" if send_email else "false",
+            "Operator": operator
         }
         res = requests.post(webhook_url, json=payload, headers={"Content-Type": "application/json"}, timeout=15)
         if res.status_code in [200, 202]:
@@ -708,6 +749,13 @@ Password:  {edit_email_password}
     st.markdown("---")
     st.subheader("🚀 5. เลือกคำสั่งบันทึกข้อมูล (Save & Send Options)")
     
+    edit_operator = st.selectbox(
+        "👤 เลือกบัญชีผู้ส่ง Email (Sender / Operator)",
+        OPERATOR_OPTIONS,
+        index=0,
+        help="อีเมลจะถูกส่งออกจากกล่องข้อความ (Sent Items) ของบัญชีที่เลือก"
+    )
+
     col_act1, col_act2 = st.columns(2)
     btn_excel_only = col_act1.button("📊 1. บันทึกลง Excel อย่างเดียว (ไม่ส่ง Email)", use_container_width=True)
     btn_excel_email = col_act2.button("📧 2. บันทึกลง Excel และส่ง Email", type="primary", use_container_width=True)
@@ -733,7 +781,8 @@ Password:  {edit_email_password}
                 webhook_url, reviewed_data, mapped_data,
                 custom_username=edit_email_username,
                 custom_password=edit_email_password,
-                send_email=should_send_email
+                send_email=should_send_email,
+                operator=edit_operator
             )
         
         st.success("✅ ดำเนินการสำเร็จ!")
