@@ -930,100 +930,181 @@ with tab_settings:
     ])
 
     # ------------------------------------------
-    # Sub-tab 1: Company & BU
+    # Sub-tab 1: Company & BU (Management Table + Live Search + Action Badges + Micro-interactions)
     # ------------------------------------------
     with subtab_comp:
-        st.markdown("### 🏢 จัดการรายชื่อบริษัท และตัวย่อ BU (1 บริษัท = 1 BU)")
-        
+        st.markdown("### 🏢 จัดการรายชื่อบริษัท และตัวย่อ BU")
+        st.caption("ระบบล็อก **1 บริษัท = 1 BU เสมอ** สามารถค้นหา กรอง และจัดการข้อมูลได้แบบเรียลไทม์")
+
         companies_list = master_data.get("companies", [])
-        
-        st.markdown("##### 📋 ตารางรายชื่อบริษัทและ BU ปัจจุบัน:")
-        comp_df_data = [{"ลำดับ": idx + 1, "Company (ชื่อบริษัท)": c["Company"], "BU (ตัวย่อ)": c["BU"]} for idx, c in enumerate(companies_list)]
-        st.table(comp_df_data)
 
-        col_add_comp, col_del_comp = st.columns(2)
-        
-        with col_add_comp:
-            st.markdown("##### ➕ เพิ่ม / แก้ไข บริษัท & BU")
-            with st.form("form_add_company"):
-                new_comp_name = st.text_input("ชื่อบริษัท (Company Name)*", placeholder="เช่น Test Automobile Co., Ltd.")
-                new_bu_name = st.text_input("ตัวย่อ BU*", placeholder="เช่น TAB")
-                btn_save_comp = st.form_submit_button("💾 เพิ่ม/อัปเดตบริษัท")
-                
-                if btn_save_comp:
-                    if not new_comp_name.strip() or not new_bu_name.strip():
-                        st.error("กรุณากรอกทั้งชื่อบริษัทและตัวย่อ BU")
-                    else:
-                        existing = False
-                        for c in companies_list:
-                            if c["Company"].strip().lower() == new_comp_name.strip().lower():
-                                c["BU"] = new_bu_name.strip()
-                                existing = True
-                                break
-                        if not existing:
-                            companies_list.append({"Company": new_comp_name.strip(), "BU": new_bu_name.strip()})
-                        
-                        master_data["companies"] = companies_list
-                        if save_master_data(master_data):
-                            st.success(f"✅ บันทึกบริษัท '{new_comp_name.strip()}' (BU: {new_bu_name.strip()}) สำเร็จ!")
-                            st.rerun()
+        # --- Top Search & Sort Bar ---
+        col_search, col_sort = st.columns([2.5, 1.2])
+        with col_search:
+            search_comp_txt = st.text_input(
+                "🔍 ค้นหาชื่อบริษัท หรือตัวย่อ BU...",
+                placeholder="พิมพ์คำค้นหา เช่น Honda, MCR, BMW...",
+                key="comp_search_input"
+            )
+        with col_sort:
+            sort_comp_by = st.selectbox(
+                "🔃 เรียงตาม",
+                ["ชื่อบริษัท (A-Z)", "ชื่อบริษัท (Z-A)", "ตัวย่อ BU (A-Z)", "ตัวย่อ BU (Z-A)"],
+                key="comp_sort_select"
+            )
 
-        with col_del_comp:
-            st.markdown("##### 🗑️ ลบบริษัท")
-            with st.form("form_del_company"):
-                del_comp_name = st.selectbox("เลือกบริษัทที่ต้องการลบ", [c["Company"] for c in companies_list] if companies_list else [""])
-                btn_del_comp = st.form_submit_button("🗑️ ยืนยันลบบริษัท", type="secondary")
+        # Filtering
+        filtered_comps = companies_list
+        if search_comp_txt.strip():
+            q = search_comp_txt.strip().lower()
+            filtered_comps = [c for c in companies_list if q in c["Company"].lower() or q in c["BU"].lower()]
+
+        # Sorting
+        if sort_comp_by == "ชื่อบริษัท (A-Z)":
+            filtered_comps = sorted(filtered_comps, key=lambda x: x["Company"].lower())
+        elif sort_comp_by == "ชื่อบริษัท (Z-A)":
+            filtered_comps = sorted(filtered_comps, key=lambda x: x["Company"].lower(), reverse=True)
+        elif sort_comp_by == "ตัวย่อ BU (A-Z)":
+            filtered_comps = sorted(filtered_comps, key=lambda x: x["BU"].lower())
+        elif sort_comp_by == "ตัวย่อ BU (Z-A)":
+            filtered_comps = sorted(filtered_comps, key=lambda x: x["BU"].lower(), reverse=True)
+
+        st.caption(f"📊 แสดง **{len(filtered_comps)}** จากทั้งหมด **{len(companies_list)}** บริษัท")
+
+        # --- Add / Edit Company Drawer with Real-Time Validation ---
+        with st.expander("➕ เพิ่มบริษัทใหม่ / แก้ไขตัวย่อ BU", expanded=False):
+            col_in_c1, col_in_c2 = st.columns([2, 1])
+            with col_in_c1:
+                input_comp_name = st.text_input("ชื่อบริษัท (Company Name)*", placeholder="เช่น Test Automobile Co., Ltd.", key="input_comp_name_field")
+            with col_in_c2:
+                input_bu_name = st.text_input("ตัวย่อ BU*", placeholder="เช่น TAB", key="input_bu_name_field")
+
+            # Real-Time Live Validation
+            if input_comp_name.strip():
+                match_existing = next((c for c in companies_list if c["Company"].strip().lower() == input_comp_name.strip().lower()), None)
+                if match_existing:
+                    st.info(f"💡 **พบข้อมูลเดิม**: ปัจจุบัน BU คือ `{match_existing['BU']}` — หากกดบันทึกจะเป็นการ **อัปเดตตัวย่อ BU**")
+                else:
+                    st.success(f"✅ **ชื่อบริษัทใหม่**: พร้อมเพิ่มเข้าสู่ระบบ (1 บริษัท = 1 BU)")
+
+            if st.button("💾 บันทึกบริษัท & BU", type="primary", key="btn_save_comp_action"):
+                if not input_comp_name.strip() or not input_bu_name.strip():
+                    st.error("⚠️ กรุณากรอกทั้งชื่อบริษัทและตัวย่อ BU ให้ครบถ้วน")
+                else:
+                    c_clean = input_comp_name.strip()
+                    bu_clean = input_bu_name.strip()
+                    found = False
+                    for item in companies_list:
+                        if item["Company"].strip().lower() == c_clean.lower():
+                            item["BU"] = bu_clean
+                            found = True
+                            break
+                    if not found:
+                        companies_list.append({"Company": c_clean, "BU": bu_clean})
+                    
+                    master_data["companies"] = companies_list
+                    if save_master_data(master_data):
+                        st.toast(f"✅ บันทึกบริษัท '{c_clean}' (BU: {bu_clean}) สำเร็จ!", icon="🏢")
+                        st.rerun()
+
+        # --- Management Table with Row-Level Badges & Actions ---
+        st.markdown("---")
+        
+        # Table Header
+        h_col1, h_col2, h_col3, h_col4 = st.columns([0.6, 3.8, 1.4, 1.2])
+        h_col1.markdown("**#**")
+        h_col2.markdown("**ชื่อบริษัท (Company Name)**")
+        h_col3.markdown("**🏷️ ตัวย่อ BU**")
+        h_col4.markdown("**การจัดการ (Action)**")
+
+        st.markdown("<hr style='margin-top:0;margin-bottom:8px;'>", unsafe_allow_html=True)
+
+        if not filtered_comps:
+            st.info("🔍 ไม่พบบริษัทที่ตรงกับคำค้นหา")
+        else:
+            for idx, c_entry in enumerate(filtered_comps):
+                row_c1, row_c2, row_c3, row_c4 = st.columns([0.6, 3.8, 1.4, 1.2])
+                row_c1.write(f"**{idx + 1}**")
+                row_c2.write(f"🏢 {c_entry['Company']}")
+                row_c3.markdown(f"`🏷️ {c_entry['BU']}`")
                 
-                if btn_del_comp:
-                    if del_comp_name:
-                        master_data["companies"] = [c for c in companies_list if c["Company"] != del_comp_name]
-                        if save_master_data(master_data):
-                            st.success(f"🗑️ ลบบริษัท '{del_comp_name}' เรียบร้อยแล้ว!")
-                            st.rerun()
+                # Action Button: Delete
+                if row_c4.button("🗑️ ลบ", key=f"del_comp_btn_{c_entry['Company']}", help=f"ลบบริษัท {c_entry['Company']}"):
+                    master_data["companies"] = [item for item in companies_list if item["Company"] != c_entry["Company"]]
+                    if save_master_data(master_data):
+                        st.toast(f"🗑️ ลบบริษัท '{c_entry['Company']}' เรียบร้อยแล้ว", icon="🗑️")
+                        st.rerun()
 
     # ------------------------------------------
-    # Sub-tab 2: Branches
+    # Sub-tab 2: Branches (Interactive Tag Chips + Real-Time Validation + Toast)
     # ------------------------------------------
     with subtab_branch:
         st.markdown("### 📍 จัดการรายชื่อสาขา (Branches)")
-        
+        st.caption("คลิกปุ่ม ✕ บนป้ายสาขาเพื่อลบออกทันที หรือพิมพ์ชื่อสาขาใหม่เพื่อเพิ่มลงในระบบ")
+
         branches_list = master_data.get("branches", [])
+
+        # --- Quick Add Branch with Real-Time Validation ---
+        col_b_in, col_b_btn = st.columns([3, 1])
+        with col_b_in:
+            new_branch_input = st.text_input(
+                "➕ เพิ่มสาขาใหม่",
+                placeholder="พิมพ์ชื่อสาขา เช่น ระยอง, ขอนแก่น, สาทร...",
+                key="new_branch_quick_input"
+            )
+            # Live Validation
+            if new_branch_input.strip():
+                if new_branch_input.strip() in branches_list:
+                    st.warning(f"⚠️ มีสาขา '{new_branch_input.strip()}' อยู่ในระบบแล้ว")
+                else:
+                    st.success(f"✅ สาขา '{new_branch_input.strip()}' พร้อมเพิ่มลงในระบบ")
+
+        with col_b_btn:
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+            if st.button("➕ เพิ่มสาขา", type="primary", use_container_width=True, key="btn_add_branch_chip"):
+                b_clean = new_branch_input.strip()
+                if not b_clean:
+                    st.error("กรุณากรอกชื่อสาขา")
+                elif b_clean in branches_list:
+                    st.warning("มีชื่อสาขานี้อยู่ในระบบแล้ว")
+                else:
+                    branches_list.append(b_clean)
+                    master_data["branches"] = branches_list
+                    if save_master_data(master_data):
+                        st.toast(f"📍 เพิ่มสาขา '{b_clean}' สำเร็จ!", icon="📍")
+                        st.rerun()
+
+        # --- Search / Filter for branches ---
+        st.markdown("---")
+        col_b_search, col_b_count = st.columns([2.5, 1.5])
+        with col_b_search:
+            search_branch_txt = st.text_input(
+                "🔍 กรองค้นหาสาขา...",
+                placeholder="พิมพ์ชื่อสาขาเพื่อกรอง...",
+                key="search_branch_chip_input"
+            )
+        with col_b_count:
+            st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
+            st.caption(f"📊 ทั้งหมด **{len(branches_list)}** สาขา")
+
+        filtered_branches = branches_list
+        if search_branch_txt.strip():
+            filtered_branches = [b for b in branches_list if search_branch_txt.strip().lower() in b.lower()]
+
+        # --- Interactive Tag Chips Grid ---
+        st.markdown("##### 🏷️ รายชื่อสาขา (คลิก ✕ เพื่อลบ):")
         
-        st.markdown("##### 📋 รายชื่อสาขาปัจจุบัน:")
-        st.write(", ".join([f"`{b}`" for b in branches_list]))
-
-        col_add_br, col_del_br = st.columns(2)
-        with col_add_br:
-            st.markdown("##### ➕ เพิ่มสาขาใหม่")
-            with st.form("form_add_branch"):
-                new_branch_name = st.text_input("ชื่อสาขา (ภาษาไทย)*", placeholder="เช่น ขอนแก่น, ระยอง")
-                btn_save_br = st.form_submit_button("💾 เพิ่มสาขา")
-                
-                if btn_save_br:
-                    if not new_branch_name.strip():
-                        st.error("กรุณากรอกชื่อสาขา")
-                    elif new_branch_name.strip() in branches_list:
-                        st.warning("มีชื่อสาขานี้อยู่ในระบบแล้ว")
-                    else:
-                        branches_list.append(new_branch_name.strip())
-                        master_data["branches"] = branches_list
-                        if save_master_data(master_data):
-                            st.success(f"✅ เพิ่มสาขา '{new_branch_name.strip()}' สำเร็จ!")
-                            st.rerun()
-
-        with col_del_br:
-            st.markdown("##### 🗑️ ลบสาขา")
-            with st.form("form_del_branch"):
-                del_branch_name = st.selectbox("เลือกสาขาที่ต้องการลบ", branches_list if branches_list else [""])
-                btn_del_br = st.form_submit_button("🗑️ ยืนยันลบสาขา")
-                
-                if btn_del_br:
-                    if del_branch_name and del_branch_name in branches_list:
-                        branches_list.remove(del_branch_name)
-                        master_data["branches"] = branches_list
-                        if save_master_data(master_data):
-                            st.success(f"🗑️ ลบสาขา '{del_branch_name}' สำเร็จ!")
-                            st.rerun()
+        # Display as responsive grid of chip buttons
+        chip_cols = st.columns(4)
+        for idx, br_name in enumerate(filtered_branches):
+            col_target = chip_cols[idx % 4]
+            with col_target:
+                if col_target.button(f"📍 {br_name} ✕", key=f"chip_del_{br_name}", use_container_width=True, help=f"คลิกเพื่อลบสาขา {br_name}"):
+                    branches_list.remove(br_name)
+                    master_data["branches"] = branches_list
+                    if save_master_data(master_data):
+                        st.toast(f"🗑️ ลบสาขา '{br_name}' เรียบร้อยแล้ว", icon="🗑️")
+                        st.rerun()
 
     # ------------------------------------------
     # Sub-tab 3: Operators / Senders
@@ -1058,7 +1139,7 @@ with tab_settings:
                             master_data["templates"][new_op_email.strip()] = json.loads(json.dumps(DEFAULT_MASTER_DATA["templates"]["nawarutte.non@i24.co.th"]))
                         
                         if save_master_data(master_data):
-                            st.success(f"✅ เพิ่มผู้ส่ง '{new_op_email.strip()}' สำเร็จ!")
+                            st.toast(f"👤 เพิ่มผู้ส่ง '{new_op_email.strip()}' สำเร็จ!", icon="👤")
                             st.rerun()
 
         with col_del_op:
@@ -1076,7 +1157,7 @@ with tab_settings:
                         if del_op_email in master_data.get("templates", {}):
                             del master_data["templates"][del_op_email]
                         if save_master_data(master_data):
-                            st.success(f"🗑️ ลบผู้ส่ง '{del_op_email}' สำเร็จ!")
+                            st.toast(f"🗑️ ลบผู้ส่ง '{del_op_email}' สำเร็จ!", icon="🗑️")
                             st.rerun()
 
     # ------------------------------------------
@@ -1122,7 +1203,7 @@ with tab_settings:
                     "intro": in_intro.strip()
                 }
                 if save_master_data(master_data):
-                    st.success(f"✅ บันทึก Template สำหรับ `{edit_tpl_app}` ของ `{edit_tpl_user}` เรียบร้อยแล้ว!")
+                    st.toast(f"📧 บันทึก Template '{edit_tpl_app}' ของ '{edit_tpl_user}' สำเร็จ!", icon="💾")
                     st.rerun()
 
             if btn_reset_tpl:
@@ -1130,7 +1211,7 @@ with tab_settings:
                 if "templates" in master_data and edit_tpl_user in master_data["templates"]:
                     master_data["templates"][edit_tpl_user][edit_tpl_app] = def_tpl
                     if save_master_data(master_data):
-                        st.success(f"🔄 คืนค่าเริ่มต้น Template สำหรับ `{edit_tpl_app}` เรียบร้อยแล้ว!")
+                        st.toast(f"🔄 คืนค่าเริ่มต้น Template '{edit_tpl_app}' สำเร็จ!", icon="🔄")
                         st.rerun()
 
         # Real-Time Live Preview of the edited template
@@ -1166,7 +1247,7 @@ Subject:  {in_subject}
                 imported_data = json.load(uploaded_json)
                 if st.button("🔄 ยืนยันนำเข้าข้อมูลนี้ (Apply Imported Data)", type="primary"):
                     if save_master_data(imported_data):
-                        st.success("✅ นำเข้าข้อมูล Master Data สำเร็จเรียบร้อยแล้ว!")
+                        st.toast("✅ นำเข้าข้อมูล Master Data สำเร็จ!", icon="📥")
                         st.rerun()
             except Exception as ex:
                 st.error(f"ไฟล์ JSON ไม่ถูกต้อง: {ex}")
@@ -1174,6 +1255,6 @@ Subject:  {in_subject}
         st.markdown("---")
         if st.button("⚠️ คืนค่า Master Data ทั้งหมดเป็นค่าเริ่มต้นจากโรงงาน (Reset All to Factory Defaults)"):
             if save_master_data(DEFAULT_MASTER_DATA):
-                st.success("🔄 คืนค่า Master Data ทั้งหมดเป็นค่าเริ่มต้นเรียบร้อยแล้ว!")
+                st.toast("🔄 คืนค่า Master Data ทั้งหมดเป็นค่าเริ่มต้นเรียบร้อยแล้ว!", icon="🔄")
                 st.rerun()
 
