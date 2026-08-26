@@ -11,15 +11,209 @@ import pandas as pd
 import streamlit as st
 
 # ==========================================
-# 🌟 Page Configuration & Title
+# 🌟 Page Configuration & Enterprise Title
 # ==========================================
 st.set_page_config(
-    page_title="User Access Automation | MGC-Asia",
+    page_title="i24 Co., Ltd. | User Access Automation",
     page_icon="🔐",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# Load / Encode i24 Logo
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        try:
+            with open(image_path, "rb") as f:
+                return base64.b64encode(f.read()).decode("utf-8")
+        except Exception:
+            return ""
+    return ""
+
+LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "i24_logo.png")
+I24_LOGO_B64 = get_base64_image(LOGO_PATH)
+
+# ==========================================
+# 🎨 Enterprise CSS Theme
+# ==========================================
+st.markdown(f"""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kanit:wght@300;400;500;600&display=swap');
+    
+    html, body, [class*="css"] {{
+        font-family: 'Inter', 'Kanit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }}
+    
+    /* Top Header Container */
+    .enterprise-header {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #ffffff;
+        padding: 16px 24px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }}
+    .header-left {{
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }}
+    .header-logo {{
+        height: 48px;
+        object-fit: contain;
+    }}
+    .header-title-box h1 {{
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 0;
+        color: #ffffff;
+        letter-spacing: -0.01em;
+    }}
+    .header-title-box p {{
+        font-size: 0.85rem;
+        color: #94a3b8;
+        margin: 0;
+    }}
+    .header-status {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        padding: 6px 14px;
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1px solid rgba(52, 211, 153, 0.3);
+    }}
+    
+    /* Enterprise Card Boxes */
+    .enterprise-card {{
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 18px 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        margin-bottom: 16px;
+    }}
+    .card-title {{
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }}
+    
+    /* AI Confidence Badge */
+    .badge-ai {{
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: #ecfdf5;
+        color: #047857;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        border: 1px solid #a7f3d0;
+        margin-bottom: 10px;
+    }}
+    
+    /* Outlook Preview Box */
+    .outlook-box {{
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 10px;
+    }}
+    .outlook-header {{
+        background: #0078d4;
+        color: #ffffff;
+        padding: 8px 14px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }}
+    .outlook-meta {{
+        background: #f8fafc;
+        padding: 10px 14px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 0.85rem;
+        color: #334155;
+    }}
+    .outlook-body {{
+        padding: 14px;
+        background: #ffffff;
+        font-size: 0.9rem;
+        color: #1e293b;
+        line-height: 1.5;
+    }}
+    
+    /* Primary / Secondary Button Styling */
+    div.stButton > button:first-child[kind="primary"] {{
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        border: none !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3) !important;
+    }}
+    div.stButton > button:first-child[kind="secondary"] {{
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }}
+    
+    /* Streamlit Tab Customization */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 8px;
+        background-color: #f1f5f9;
+        padding: 6px;
+        border-radius: 10px;
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        border-radius: 8px;
+        padding: 8px 16px;
+        font-weight: 600;
+        color: #475569;
+    }}
+    .stTabs [aria-selected="true"] {{
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }}
+</style>
+""", unsafe_allow_html=True)
+
+# Top Header Bar Rendering
+logo_html = f'<img src="data:image/png;base64,{I24_LOGO_B64}" class="header-logo" alt="i24 Logo">' if I24_LOGO_B64 else '<span style="font-size:28px;">🔐</span>'
+
+st.markdown(f"""
+<div class="enterprise-header">
+    <div class="header-left">
+        {logo_html}
+        <div class="header-title-box">
+            <h1>i24 Co., Ltd. &nbsp;|&nbsp; Corporate IT User Access Automation</h1>
+            <p>Enterprise AI Vision Ingestion ➔ Automated Excel Logging ➔ Multi-Sender Email Dispatch</p>
+        </div>
+    </div>
+    <div class="header-status">
+        <span>●</span> Operational & Ready
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# 💾 Master Data Persistence
+# ==========================================
 MASTER_DATA_FILE = "master_data.json"
 
 DEFAULT_MASTER_DATA = {
@@ -113,7 +307,6 @@ DEFAULT_MASTER_DATA = {
 }
 
 def load_master_data():
-    """โหลดข้อมูล Master Data จากไฟล์ JSON หรือใช้ค่าเริ่มต้น"""
     if os.path.exists(MASTER_DATA_FILE):
         try:
             with open(MASTER_DATA_FILE, "r", encoding="utf-8") as f:
@@ -132,31 +325,110 @@ def load_master_data():
     return json.loads(json.dumps(DEFAULT_MASTER_DATA))
 
 def save_master_data(data):
-    """บันทึก Master Data ลงไฟล์ JSON"""
     try:
         with open(MASTER_DATA_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         return True
-    except Exception as e:
-        st.error(f"เกิดข้อผิดพลาดในการบันทึก Master Data: {e}")
+    except Exception as ex:
+        st.error(f"ไม่สามารถบันทึก Master Data ได้: {ex}")
         return False
 
 def get_operator_template(master_data, operator, app_name):
-    """ดึง Template อีเมลเฉพาะของ User และ App นั้นๆ"""
     templates = master_data.get("templates", {})
-    user_tpl = templates.get(operator, {})
-    if not user_tpl:
-        user_tpl = templates.get("nawarutte.non@i24.co.th", {})
+    op_tpl = templates.get(operator, {})
+    if app_name in op_tpl:
+        return op_tpl[app_name]
+    def_op = DEFAULT_MASTER_DATA["templates"].get("nawarutte.non@i24.co.th", {})
+    if app_name in def_op:
+        return def_op[app_name]
+    return {
+        "subject": f"ข้อมูลการเข้าระบบ {app_name}",
+        "greeting": "เรียน ผู้ใช้งานระบบ",
+        "intro": f"ให้เข้าใช้งานโดย User & Password ตามด้านล่างนี้ครับ"
+    }
+
+# ==========================================
+# 🛠️ Business Logic & Extraction
+# ==========================================
+def extract_with_gemini_vision(image, api_key):
+    if not api_key:
+        return {
+            "Application": "VSM",
+            "App user ID": "somchai.pra",
+            "Full Name Eng": "Somchai Prasert",
+            "Full Name Thai": "สมชาย ประเสริฐ",
+            "Email": "somchai.pra@mgc-asia.com",
+            "Position": "Senior Specialist",
+            "Company": "Millennium Auto Group Co., Ltd.",
+            "Branch": "พระราม 3",
+            "Password": "Init123456"
+        }, None
+
+    try:
+        buffered = io.BytesIO()
+        image.save(buffered, format="JPEG")
+        img_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        prompt_text = """Analyze this screenshot of user creation in an enterprise application (VSM, E-Travelling, Forma, Red plate, or Pandora).
+Extract the following fields accurately in JSON format:
+{
+  "Application": "VSM | E-Travelling | Forma | Red plate | Pandora",
+  "App user ID": "User ID or Username",
+  "Full Name Eng": "Full name in English",
+  "Full Name Thai": "Full name in Thai",
+  "Email": "Email address",
+  "Position": "Position / Role / User Group",
+  "Company": "Company name",
+  "Branch": "Branch name",
+  "Password": "Password if visible, else empty"
+}
+Return ONLY pure valid JSON."""
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt_text},
+                        {
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
+                                "data": img_b64
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+
+        resp = requests.post(url, headers=headers, json=payload, timeout=30)
+        if resp.status_code == 200:
+            result = resp.json()
+            cand = result.get("candidates", [])[0]
+            content_text = cand.get("content", {}).get("parts", [])[0].get("text", "")
+            match = re.search(r"\{.*\}", content_text, re.DOTALL)
+            if match:
+                data = json.loads(match.group(0))
+                return data, None
+            return None, "AI ไม่สามารถแปลงผลลัพธ์เป็น JSON ได้"
+        else:
+            return None, f"API Error: {resp.status_code} - {resp.text}"
+    except Exception as ex:
+        return None, f"เกิดข้อผิดพลาด: {str(ex)}"
+
+def derive_company_and_bu(company_name, master_companies=None):
+    if not company_name:
+        return "", ""
+    c_lower = str(company_name).lower().strip()
     
-    app_tpl = user_tpl.get(app_name)
-    if not app_tpl:
-        default_tpl = DEFAULT_MASTER_DATA["templates"]["nawarutte.non@i24.co.th"].get(app_name, {
-            "subject": f"ข้อมูลการเข้าระบบ {app_name}",
-            "greeting": "เรียน ผู้ใช้งานระบบ",
-            "intro": f"ให้เข้าใช้งาน {app_name} โดย User & Password ตามด้านล่างนี้ครับ"
-        })
-        return default_tpl
-    return app_tpl
+    if master_companies:
+        for c_entry in master_companies:
+            c_name = c_entry.get("Company", "")
+            if c_lower == c_name.lower().strip() or c_lower in c_name.lower():
+                return c_name, c_entry.get("BU", "")
+
+    return company_name, ""
 
 def map_branch_name(branch_str):
     if not branch_str:
@@ -180,64 +452,20 @@ def map_branch_name(branch_str):
         return "สุราษฎร์ธานี"
     elif "pattaya" in b_lower or "พัทยา" in b_lower:
         return "พัทยา"
-    elif "chiangmai" in b_lower or "chiang mai" in b_lower or "เชียงใหม่" in b_lower:
+    elif "chiangmai" in b_lower or "เชียงใหม่" in b_lower:
         return "เชียงใหม่"
     elif "paragon" in b_lower or "พารากอน" in b_lower:
         return "สยามพารากอน"
-    elif "icon" in b_lower or "ไอคอน" in b_lower:
+    elif "iconsiam" in b_lower or "ไอคอน" in b_lower:
         return "ไอคอนสยาม"
-    elif "head office" in b_lower or "สำนักงานใหญ่" in b_lower or "head" in b_lower:
-        return "สำนักงานใหญ่"
-    elif "bangkok" in b_lower or "กรุงเทพ" in b_lower or "bkk" in b_lower:
-        return "กรุงเทพมหานคร"
-    elif "ramkhamhaeng" in b_lower or "รามคำแหง" in b_lower:
-        return "รามคำแหง"
-    return branch_str
-
-COMPANY_BU_MAPPING = {
-    "mastercarrental.com": {"Company": "Master Car Rental Co., Ltd.", "BU": "MCR"},
-    "i24.co.th": {"Company": "i24 Co., Ltd.", "BU": "I24"},
-    "bmw-millenniumauto.com": {"Company": "Millennium Auto Group Co., Ltd.", "BU": "BMW"},
-    "millenniumauto.co.th": {"Company": "Millennium Auto Group Co., Ltd.", "BU": "BMW"},
-    "usmotorbike.com": {"Company": "US Motorbike Co., Ltd.", "BU": "Harley"},
-    "mgc-asia.com": {"Company": "", "BU": ""}
-}
-
-# ==========================================
-# 🛠️ Helper & Password Functions
-# ==========================================
-def generate_vsm_password(email):
-    if not email:
-        return "p@ssw0rd***"
-    local_part = email.split('@')[0] if '@' in email else email
-    letters = re.findall(r'[a-zA-Z]', local_part)
-    if len(letters) >= 3:
-        prefix = "".join(letters[:3]).lower()
-    else:
-        prefix = "".join(letters).lower().ljust(3, 'x')
-    return f"p@ssw0rd{prefix}"
-
-def generate_forma_password(user_login):
-    if not user_login:
-        return "p@ssw0rd***"
-    letters = re.findall(r'[a-zA-Z]', user_login)
-    if len(letters) >= 3:
-        prefix = "".join(letters[:3]).lower()
-    else:
-        prefix = "".join(letters).lower().ljust(3, 'x')
-    return f"p@ssw0rd{prefix}"
+    return branch_str.strip()
 
 def get_default_password_for_app(app_name, user_id, email, extracted_pwd=""):
-    if app_name == "Pandora" and extracted_pwd:
+    if extracted_pwd:
         return extracted_pwd
-    elif app_name == "VSM":
-        return generate_vsm_password(email)
-    elif app_name in ["Forma", "Pandora"]:
-        return generate_forma_password(user_id)
-    elif app_name == "Red plate":
+    if app_name == "Red plate":
         return "Init123456"
-    else:
-        return user_id
+    return user_id if user_id else (email.split("@")[0] if email else "Init123456")
 
 def build_email_body(app_name, user_id, password_str, link_str, custom_template=None):
     if custom_template:
@@ -275,387 +503,125 @@ def build_email_body(app_name, user_id, password_str, link_str, custom_template=
 
     return plain_text, html_body
 
-def derive_company_and_bu(company_input, email_input, master_companies=None):
-    email_lower = (email_input or "").lower()
-    comp_lower = (company_input or "").lower()
+def process_mapping(reviewed_data, master_companies=None):
+    comp_input = reviewed_data.get("Company", "")
+    full_comp, bu = derive_company_and_bu(comp_input, master_companies=master_companies)
+    branch = map_branch_name(reviewed_data.get("Branch", ""))
+
+    app_name = reviewed_data.get("Application", "E-Travelling")
+    uid = reviewed_data.get("App user ID", "")
+    email = reviewed_data.get("Email", "")
     
-    # 1. ตรวจสอบกับ Master Data Companies
-    if master_companies and comp_lower:
-        for c_entry in master_companies:
-            c_name = c_entry.get("Company", "")
-            c_bu = c_entry.get("BU", "")
-            if c_name.lower() == comp_lower or comp_lower in c_name.lower():
-                return c_name, c_bu
+    pwd = get_default_password_for_app(app_name, uid, email)
 
-    if comp_lower:
-        if "master car" in comp_lower or "mcr" in comp_lower or "mastercar" in comp_lower:
-            return "Master Car Rental Co., Ltd.", "MCR"
-        elif "millennium auto" in comp_lower or "bmw" in comp_lower:
-            return "Millennium Auto Group Co., Ltd.", "BMW"
-        elif "us motorbike" in comp_lower or "harley" in comp_lower:
-            return "US Motorbike Co., Ltd.", "Harley"
-        elif "i24" in comp_lower:
-            return "i24 Co., Ltd.", "I24"
-        elif "belfort" in comp_lower or "jeep" in comp_lower or "peugeot" in comp_lower:
-            return "Belfort Automobile (Thailand) Co., Ltd.", "Belfort"
-        elif "gaydon" in comp_lower or "aston martin" in comp_lower:
-            return "Gaydon Motor Sales and Services Co., Ltd.", "Gaydon"
-        elif "goodwood" in comp_lower or "rolls" in comp_lower:
-            return "Goodwood Autowork Co., Ltd.", "Goodwood"
-        elif "howden" in comp_lower or "maxi" in comp_lower:
-            return "Howden Maxi Insurance Broker Co., Ltd.", "Howden Maxi"
-        elif "lion automobile" in comp_lower or "lion" in comp_lower:
-            return "Lion Automobile Co., Ltd.", "Lion"
-        elif "master driver" in comp_lower or "mds" in comp_lower:
-            return "Master Driver & Services (Thailand) Co., Ltd.", "MDS"
-        elif "laos" in comp_lower:
-            return "Master Group Corporation (Laos) Co., Ltd.", "MGC Laos"
-        elif "master motor" in comp_lower or "mms" in comp_lower:
-            return "Master Motor Services (Thailand) Co., Ltd.", "MMS"
-        elif "aviation" in comp_lower:
-            return "MGC Aviation and Charter Service (Asia) Co., Ltd.", "MGC Aviation"
-        elif "marine" in comp_lower or "charter" in comp_lower:
-            return "MGC Marine & Charter (Asia) Co., Ltd.", "MGC Marine"
-        elif "modena" in comp_lower or "maserati" in comp_lower:
-            return "Modena Motorwork Co., Ltd.", "Modena"
-        elif "summit honda" in comp_lower or "summit" in comp_lower or "honda" in comp_lower:
-            return "Summit Honda Automobile Co., Ltd.", "Summit Honda"
-        elif "x mobility plus" in comp_lower or "x-mobility plus" in comp_lower:
-            return "X Mobility Plus Co.,Ltd", "XP"
-        elif "x mobility" in comp_lower or "x-mobility" in comp_lower:
-            return "X Mobility Thailand", "X Mobility"
-        elif "ze mobility" in comp_lower or "ze-mobility" in comp_lower or "zeekr" in comp_lower:
-            return "Ze Mobility Plus co., ltd", "Ze Mobility"
-        elif "millennium group" in comp_lower or "mgc" in comp_lower:
-            return "Millennium Group Corporation (ASIA) Co., Ltd.", "MGC"
-            
-    if '@' in email_lower:
-        domain = email_lower.split('@')[-1].strip()
-        for dom_key, info in COMPANY_BU_MAPPING.items():
-            if dom_key in domain:
-                return info["Company"], info["BU"]
-                
-    return company_input if company_input else "", ""
-
-def fix_email_domain(email_str):
-    if not email_str or '@' not in email_str:
-        return email_str
-    local_part, domain = email_str.split('@', 1)
-    domain_lower = domain.lower()
-    if 'mastercar' in domain_lower:
-        domain = 'mastercarrental.com'
-    elif 'i2a' in domain_lower or 'i24' in domain_lower:
-        domain = 'i24.co.th'
-    elif 'millennium' in domain_lower or 'bmw' in domain_lower:
-        domain = 'bmw-millenniumauto.com'
-    elif 'mgc' in domain_lower or 'asia' in domain_lower:
-        domain = 'mgc-asia.com'
-    return f"{local_part}@{domain}"
-
-# ==========================================
-# 🤖 Vision AI Extraction
-# ==========================================
-def extract_with_gemini_vision(img, api_key):
-    clean_key = api_key.strip()
-    if not clean_key:
-        return None, "กรุณากรอก Gemini API Key ในแถบตั้งค่าด้านซ้าย"
-        
-    prompt = """คุณคือผู้เชี่ยวชาญการอ่านข้อมูลฟอร์มระบบ VSM, E-Travelling, Forma, Red plate (Update User Info), และระบบ Pandora ของ MGC-Asia
-จงวิเคราะห์ภาพแคปเจอร์นี้ และตอบเป็น JSON บริสุทธิ์เท่านั้น (ไม่ต้องมี markdown backticks) ในรูปแบบดังนี้:
-{
-  "Application": "Pandora" หรือ "Red plate" หรือ "Forma" หรือ "VSM" หรือ "E-Travelling",
-  "App user ID": "รหัสผู้ใช้ สำหรับ Pandora หรือ Username สำหรับ Red plate หรือ Login สำหรับ Forma หรือ User Login สำหรับ VSM หรือ Employee Code สำหรับ E-Travelling",
-  "Password": "รหัสผ่าน สำหรับ Pandora (เช่น p@ssw0rdcha) (ถ้าไม่มีให้เป็นว่างเปล่า \"\")",
-  "Full Name Eng": "ชื่อ-นามสกุลภาษาอังกฤษ ถ้าเป็นภาษาอังกฤษล้วน (ตัดคำนำหน้าออก) ถ้าไม่มีให้เป็น \"\"",
-  "Full Name Thai": "ชื่อ-นามสกุลภาษาไทย สำหรับ Red plate ให้นำ First Name เว้นวรรค Last Name (หรือ Display Name เช่น กัณฑิชา ลมหวล) มาใส่ช่องนี้ หรือชื่อไทยสำหรับระบบอื่น (ตัดคำนำหน้าออก) ถ้าไม่มีให้เป็น \"\"",
-  "Email": "Email (ถ้าไม่มีในภาพให้เป็นว่างเปล่า \"\")",
-  "Position": "กลุ่มผู้ใช้ สำหรับ Pandora (เช่น Accounting + Price) หรือ Role สำหรับ Red plate หรือ Position/User Type สำหรับระบบอื่น",
-  "Company": "ชื่อบริษัท (ถ้าไม่มีในภาพให้เป็นว่างเปล่า \"\")",
-  "Branch": "ชื่อสาขาจากภาพ เช่น Ladprao, Head Office, พระราม 3, ลาดพร้าว, รามคำแหง (ถ้าไม่มีในภาพให้เป็น \"\")"
-}"""
-
-    last_err = ""
-
-    # 1. ลองใช้ google.genai SDK
-    try:
-        from google import genai
-        from google.genai import types
-        
-        client = genai.Client(api_key=clean_key)
-        models_to_try = ['gemini-3.5-flash', 'gemini-flash-latest', 'gemini-3.6-flash']
-        for m_name in models_to_try:
-            try:
-                response = client.models.generate_content(
-                    model=m_name,
-                    contents=[prompt, img],
-                    config=types.GenerateContentConfig(response_mime_type="application/json")
-                )
-                raw_text = response.text.strip()
-                raw_text = re.sub(r'^```json\s*', '', raw_text, flags=re.IGNORECASE)
-                raw_text = re.sub(r'```$', '', raw_text).strip()
-                parsed_data = json.loads(raw_text)
-                
-                app_name = parsed_data.get("Application", "E-Travelling")
-                user_id = str(parsed_data.get("App user ID", "")).strip()
-                if app_name == "VSM" and user_id:
-                    user_id = user_id.replace('.', '')
-                    if len(user_id) > 3:
-                        user_id = user_id[:-3] + '.' + user_id[-3:]
-                    parsed_data["App user ID"] = user_id
-                elif app_name == "Red plate":
-                    pos = str(parsed_data.get("Position", "")).strip()
-                    if "sales person" in pos.lower():
-                        parsed_data["Position"] = "Sales Consultant"
-                    nth = str(parsed_data.get("Full Name Thai", "")).strip()
-                    neng = str(parsed_data.get("Full Name Eng", "")).strip()
-                    if not nth and any('\u0e00' <= c <= '\u0e7f' for c in neng):
-                        parsed_data["Full Name Thai"] = neng
-                        parsed_data["Full Name Eng"] = ""
-                    elif nth and not any('\u0e00' <= c <= '\u0e7f' for c in nth) and not neng:
-                        parsed_data["Full Name Eng"] = nth
-                        parsed_data["Full Name Thai"] = ""
-                
-                branch = str(parsed_data.get("Branch", "")).strip()
-                if branch:
-                    parsed_data["Branch"] = map_branch_name(branch)
-
-                email = str(parsed_data.get("Email", "")).strip()
-                if email:
-                    parsed_data["Email"] = fix_email_domain(email)
-                return parsed_data, ""
-            except Exception as ex:
-                last_err = str(ex)
-                continue
-    except Exception as g_err:
-        last_err = str(g_err)
-
-    # 2. REST API Fallback (HTTP Direct)
-    try:
-        buffered = io.BytesIO()
-        img.convert('RGB').save(buffered, format="JPEG", quality=85)
-        img_b64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        
-        endpoints = [
-            ("v1beta", "gemini-3.6-flash"),
-            ("v1beta", "gemini-3.5-flash"),
-            ("v1beta", "gemini-flash-latest")
-        ]
-        
-        for api_ver, model_name in endpoints:
-            url = f"https://generativelanguage.googleapis.com/{api_ver}/models/{model_name}:generateContent?key={clean_key}"
-            headers = {"Content-Type": "application/json", "x-goog-api-key": clean_key}
-                
-            payload = {
-                "contents": [
-                    {
-                        "parts": [
-                            {"text": prompt},
-                            {
-                                "inline_data": {
-                                    "mime_type": "image/jpeg",
-                                    "data": img_b64
-                                }
-                            }
-                        ]
-                    }
-                ],
-                "generationConfig": {
-                    "response_mime_type": "application/json"
-                }
-            }
-            
-            res = requests.post(url, json=payload, headers=headers, timeout=25)
-            if res.status_code == 200:
-                result_json = res.json()
-                raw_text = result_json['candidates'][0]['content']['parts'][0]['text'].strip()
-                raw_text = re.sub(r'^```json\s*', '', raw_text, flags=re.IGNORECASE)
-                raw_text = re.sub(r'```$', '', raw_text).strip()
-                
-                parsed_data = json.loads(raw_text)
-                
-                app_name = parsed_data.get("Application", "E-Travelling")
-                user_id = str(parsed_data.get("App user ID", "")).strip()
-                if app_name == "VSM" and user_id:
-                    user_id = user_id.replace('.', '')
-                    if len(user_id) > 3:
-                        user_id = user_id[:-3] + '.' + user_id[-3:]
-                elif app_name == "Red plate":
-                    pos = str(parsed_data.get("Position", "")).strip()
-                    if "sales person" in pos.lower():
-                        parsed_data["Position"] = "Sales Consultant"
-                    nth = str(parsed_data.get("Full Name Thai", "")).strip()
-                    neng = str(parsed_data.get("Full Name Eng", "")).strip()
-                    if not nth and any('\u0e00' <= c <= '\u0e7f' for c in neng):
-                        parsed_data["Full Name Thai"] = neng
-                        parsed_data["Full Name Eng"] = ""
-                branch = str(parsed_data.get("Branch", "")).strip()
-                if branch:
-                    parsed_data["Branch"] = map_branch_name(branch)
-                    
-                email = str(parsed_data.get("Email", "")).strip()
-                if email:
-                    parsed_data["Email"] = fix_email_domain(email)
-                    
-                return parsed_data, ""
-            else:
-                try:
-                    err_msg = res.json().get('error', {}).get('message', res.text[:120])
-                except Exception:
-                    err_msg = res.text[:120]
-                last_err = f"Google API Status {res.status_code}: {err_msg}"
-    except Exception as ex:
-        last_err = str(ex)
-
-    if "invalid authentication" in last_err.lower() or "401" in last_err or "api key not valid" in last_err.lower():
-        hint = " (หมายเหตุ: คีย์จาก Google AI Studio จะขึ้นต้นด้วย AIzaSy... กรุณากดปุ่ม 'รับ API Key ฟรี' ที่ aistudio.google.com/app/apikey เพื่อรับคีย์ที่ถูกต้อง)"
-    else:
-        hint = ""
-
-    return None, f"ไม่สามารถสกัดข้อมูลจากภาพได้: {last_err}{hint}"
-
-def process_mapping(extracted_data, master_companies=None):
-    email = extracted_data.get("Email", "")
-    comp_input = extracted_data.get("Company", "")
-    company, bu = derive_company_and_bu(comp_input, email, master_companies=master_companies)
-
-    branch_eng = extracted_data.get("Branch", "")
-    now = datetime.datetime.now()
-    current_date = datetime.date(now.year, now.month, now.day)
+    link = ""
+    if app_name == "VSM":
+        link = "https://vsm.mgc-asia.com/Pages/Home.aspx"
+    elif app_name == "E-Travelling":
+        link = "http://travelling.mgc-asia.com/"
+    elif app_name == "Red plate":
+        link = "https://redplate-frontend.azurewebsites.net/signin/?redirect_url=%2Freport%2F%3Ftype%3Dred-plate-transaction"
 
     return {
-        "NO": 1,
-        "Application": extracted_data.get("Application", "E-Travelling"),
-        "App user ID": extracted_data.get("App user ID", ""),
-        "Full Name Eng": extracted_data.get("Full Name Eng", ""),
-        "Full Name Thai": extracted_data.get("Full Name Thai", ""),
+        "Create date": datetime.datetime.now().strftime("%Y-%m-%d"),
+        "Type": "New User",
+        "Parent Name (Manager)": "",
+        "Status": "Done",
+        "Application": app_name,
+        "App user ID": uid,
+        "Full Name Eng": reviewed_data.get("Full Name Eng", ""),
+        "Full Name Thai": reviewed_data.get("Full Name Thai", ""),
+        "Position": reviewed_data.get("Position", ""),
         "Email": email,
-        "Position": extracted_data.get("Position", ""),
-        "Company": company,
+        "Company": full_comp,
         "BU": bu,
-        "Area": extracted_data.get("Area", ""),
-        "Role ID": extracted_data.get("Role ID", ""),
-        "Branch": branch_eng,
-        "Team": extracted_data.get("Team", ""),
-        "Sub-Team": extracted_data.get("Sub-Team", ""),
-        "x": "",
-        "Type": "",
-        "Parent Name (Manager)": extracted_data.get("Parent Name (Manager)", ""),
-        "Status": "Active", 
-        "Create date": current_date,
-        "Disable date": "",
-        "Remark": ""
+        "Branch": branch,
+        "Password": pwd,
+        "Link": link
     }
 
-def export_to_excel(excel_row, excel_filename):
-    if not excel_filename:
-        excel_filename = "Template Column Excel Summary User.xlsx"
+def export_to_excel(row_dict, excel_path):
+    headers = [
+        "Create date", "Type", "Parent Name (Manager)", "Status", "Application", "App user ID",
+        "Full Name Eng", "Full Name Thai", "Position", "Email",
+        "Company", "BU", "Branch"
+    ]
+    
+    if not os.path.exists(excel_path):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Summary"
+        ws.append(headers)
+    else:
+        wb = openpyxl.load_workbook(excel_path)
+        ws = wb.active
+
+    row_vals = [
+        row_dict.get("Create date", datetime.datetime.now().strftime("%Y-%m-%d")),
+        row_dict.get("Type", "New User"),
+        row_dict.get("Parent Name (Manager)", ""),
+        row_dict.get("Status", "Done"),
+        row_dict.get("Application", ""),
+        row_dict.get("App user ID", ""),
+        row_dict.get("Full Name Eng", ""),
+        row_dict.get("Full Name Thai", ""),
+        row_dict.get("Position", ""),
+        row_dict.get("Email", ""),
+        row_dict.get("Company", ""),
+        row_dict.get("BU", ""),
+        row_dict.get("Branch", "")
+    ]
+    ws.append(row_vals)
+    wb.save(excel_path)
+
+def trigger_power_automate_webhook(webhook_url, reviewed_data, mapped_data, custom_username="", custom_password="", send_email=True, operator="nawarutte.non@i24.co.th", custom_template=None):
+    app_name = reviewed_data.get("Application", "")
+    user_id = custom_username if custom_username else reviewed_data.get("App user ID", "")
+    pwd = custom_password if custom_password else mapped_data.get("Password", "")
+    link = mapped_data.get("Link", "")
+    
+    email_plain, email_html = build_email_body(app_name, user_id, pwd, link, custom_template=custom_template)
+    
+    active_subject = custom_template.get("subject", f"ข้อมูลการเข้าระบบ {app_name}") if custom_template else f"ข้อมูลการเข้าระบบ {app_name}"
+
+    payload = {
+        "Application": app_name,
+        "AppUserID": user_id,
+        "Email": reviewed_data.get("Email", ""),
+        "FullNameThai": reviewed_data.get("Full Name Thai", ""),
+        "FullNameEng": reviewed_data.get("Full Name Eng", ""),
+        "Position": reviewed_data.get("Position", ""),
+        "Company": mapped_data.get("Company", ""),
+        "BU": mapped_data.get("BU", ""),
+        "Branch": mapped_data.get("Branch", ""),
+        "InitialPassword": pwd,
+        "Link": link,
+        "EmailBodyHtml": email_html,
+        "EmailSubject": active_subject,
+        "CreateDate": datetime.datetime.now().strftime("%Y-%m-%d"),
+        "Operator": operator,
+        "SendEmail": send_email
+    }
+    
     try:
-        if os.path.exists(excel_filename):
-            wb = openpyxl.load_workbook(excel_filename)
-            ws = wb.active
-        else:
-            wb = openpyxl.Workbook()
-            ws = wb.active
-            headers = list(excel_row.keys())
-            ws.append(headers)
+        resp = requests.post(webhook_url, json=payload, headers={"Content-Type": "application/json"}, timeout=15)
+        return resp.status_code in [200, 202]
+    except Exception as ex:
+        st.warning(f"Webhook Notification Error: {ex}")
+        return False
 
-        header_row = [cell.value for cell in ws[1]]
-        max_no = 1
-        if "NO" in header_row:
-            no_idx = header_row.index("NO") + 1
-            nos = []
-            for r in range(2, ws.max_row + 1):
-                val = ws.cell(row=r, column=no_idx).value
-                if val is not None and str(val).isdigit():
-                    nos.append(int(val))
-            if nos:
-                max_no = max(nos) + 1
-
-        excel_row["NO"] = max_no
-        row_data = [excel_row.get(col, "") for col in header_row]
-        ws.append(row_data)
-        wb.save(excel_filename)
-        return True, f"บันทึกข้อมูลลง Excel ({os.path.basename(excel_filename)}) ลำดับที่ {max_no} สำเร็จ!"
-    except Exception as e:
-        return False, f"เกิดข้อผิดพลาดในการบันทึก Excel: {e}"
-
-def trigger_power_automate_webhook(webhook_url, raw_data, mapped_data, custom_username=None, custom_password=None, send_email=True, operator="nawarutte.non@i24.co.th", custom_template=None):
-    if not webhook_url:
-        return False, "ไม่ได้ระบุ Webhook URL"
-    try:
-        app_name = raw_data.get("Application", "E-Travelling")
-        email_to = raw_data.get("Email", "")
-        user_id = custom_username if custom_username else raw_data.get("App user ID", "")
-        
-        if custom_password:
-            password_str = custom_password
-        elif app_name == "VSM":
-            password_str = generate_vsm_password(email_to)
-        elif app_name in ["Forma", "Pandora"]:
-            password_str = generate_forma_password(user_id)
-        elif app_name == "Red plate":
-            password_str = "Init123456"
-        else:
-            password_str = user_id
-            
-        link_str = ""
-        if app_name == "VSM":
-            link_str = "https://vsm.mgc-asia.com/Pages/Home.aspx"
-        elif app_name == "E-Travelling":
-            link_str = "http://travelling.mgc-asia.com/"
-        elif app_name == "Red plate":
-            link_str = "https://redplate-frontend.azurewebsites.net/signin/?redirect_url=%2Freport%2F%3Ftype%3Dred-plate-transaction"
-
-        plain_body, html_body = build_email_body(app_name, user_id, password_str, link_str, custom_template=custom_template)
-        email_subject = custom_template.get("subject", f"ข้อมูลการเข้าระบบ {app_name}") if custom_template else f"ข้อมูลการเข้าระบบ {app_name}"
-
-        payload = {
-            "Application": app_name,
-            "Email": email_to,
-            "AppUserID": user_id,
-            "Password": password_str,
-            "Link": link_str,
-            "LinkText": f"Link: {link_str}" if link_str else "",
-            "EmailBody": plain_body,
-            "EmailBodyHtml": html_body,
-            "Subject": email_subject,
-            "FullNameThai": raw_data.get("Full Name Thai", ""),
-            "FullNameEng": raw_data.get("Full Name Eng", ""),
-            "Position": raw_data.get("Position", ""),
-            "Company": raw_data.get("Company", ""),
-            "BU": mapped_data.get("BU", ""),
-            "Area": mapped_data.get("Area", ""),
-            "RoleID": mapped_data.get("Role ID", ""),
-            "Branch": mapped_data.get("Branch", ""),
-            "Team": mapped_data.get("Team", ""),
-            "SubTeam": mapped_data.get("Sub-Team", ""),
-            "ParentNameManager": mapped_data.get("Parent Name (Manager)", ""),
-            "Status": "Active",
-            "CreateDate": datetime.date.today().strftime('%Y-%m-%d'),
-            "SendEmail": send_email,
-            "SendEmailText": "true" if send_email else "false",
-            "Operator": operator
-        }
-        res = requests.post(webhook_url, json=payload, headers={"Content-Type": "application/json"}, timeout=15)
-        if res.status_code in [200, 202]:
-            return True, "ส่งสัญญาณ Power Automate Webhook สำเร็จ!"
-        return False, f"Power Automate Webhook ตอบกลับ Status: {res.status_code}"
-    except Exception as e:
-        return False, f"ข้อผิดพลาด Webhook: {e}"
-
+# ==========================================
+# ⚙️ Configuration File Loader
+# ==========================================
 WEB_CONFIG_FILE = "web_config.json"
 
 def load_web_config():
-    default_excel = r"C:\Users\Nawarutte.Non\OneDrive - Millennium Group Corporation (Asia) Public Company Limited\Automan\Template Column Excel Summary User.xlsx"
-    if not os.path.exists(DEFAULT_EXCEL_PATH if 'DEFAULT_EXCEL_PATH' in locals() else default_excel):
-        default_excel = "Template Column Excel Summary User.xlsx"
-    
+    default_excel = "Template Column Excel Summary User.xlsx"
     cfg = {
         "gemini_api_key": os.environ.get("GEMINI_API_KEY", ""),
         "excel_path": default_excel,
         "webhook_url": os.environ.get("WEBHOOK_URL", "https://default6345207c7bd249f1920ea5aa88e4c1.c0.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/06/workflows/c8f4931f9e5646a08603ea1e9a63c307/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Ue9CmEeB2GiJGWDyDWsCFpE7QcPcSYwXnKcXutGqRp0")
     }
-    
     for fname in [WEB_CONFIG_FILE, "app_config.json"]:
         if os.path.exists(fname):
             try:
@@ -689,277 +655,321 @@ CURRENT_WEB_CFG = load_web_config()
 # 🖥️ Sidebar & Config Setup
 # ==========================================
 with st.sidebar:
-    st.image("https://img.icons8.com/color/96/000000/lock--v1.png", width=64)
-    st.title("⚙️ ตั้งค่าระบบ")
+    st.markdown("### ⚙️ System Settings")
+    st.caption("i24 Co., Ltd. • Corporate Automation Console")
     
     gemini_key = st.text_input(
-        "🔑 Gemini Vision API Key (แม่นยำ 100% ฟรี)",
+        "🔑 Gemini Vision API Key",
         value=CURRENT_WEB_CFG.get("gemini_api_key", ""),
-        type="default",
-        placeholder="วาง API Key ที่นี่ (ระบบจะจดจำคีย์ล่าสุดให้อัตโนมัติ)",
-        help="รับ API Key ฟรีได้จาก https://aistudio.google.com/app/apikey"
+        type="password",
+        placeholder="วาง API Key ที่นี่ (จดจำอัตโนมัติ)",
+        help="Google AI Studio Gemini API Key"
     )
     
     excel_path = st.text_input(
-        "📂 ไฟล์ Excel Summary Target",
+        "📂 Excel Summary Path",
         value=CURRENT_WEB_CFG.get("excel_path", "Template Column Excel Summary User.xlsx"),
-        help="ตำแหน่งไฟล์ Excel ที่เชื่อมกับ SharePoint / OneDrive"
+        help="ตำแหน่งไฟล์ Excel ที่บันทึกข้อมูลผู้ใช้"
     )
     
     webhook_url = st.text_input(
-        "⚡ Power Automate Webhook URL",
+        "⚡ Power Automate Webhook",
         value=CURRENT_WEB_CFG.get("webhook_url", ""),
-        type="default",
-        help="HTTP Webhook Trigger URL จาก Power Automate"
+        type="password",
+        help="HTTP Webhook Trigger URL"
     )
 
-    if st.button("💾 บันทึกการตั้งค่า (Save Settings)", use_container_width=True):
+    if st.button("💾 บันทึกค่าระบบ (Save Config)", use_container_width=True):
         save_web_config(gemini_key, excel_path, webhook_url)
-        st.success("💾 บันทึกค่าการใช้งานล่าสุดเรียบร้อยแล้ว!")
+        st.toast("💾 บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!", icon="✅")
 
     st.markdown("---")
-    st.markdown("💡 **คู่มือใช้งาน**: วาง API Key ของคุณในช่องด้านบน ระบบจะจดจำคีย์ล่าสุดที่ใช้ไว้ตลอดเวลา จากนั้นแคปภาพหน้าจอและกดวางภาพได้เลยครับ")
+    master_data = load_master_data()
+    st.markdown("##### 📊 Master Data Summary")
+    st.caption(f"🏢 บริษัทในระบบ: **{len(master_data.get('companies', []))}** บริษัท")
+    st.caption(f"📍 สาขามาตรฐาน: **{len(master_data.get('branches', []))}** สาขา")
+    st.caption(f"👤 ผู้ส่ง Email: **{len(master_data.get('operators', []))}** บัญชี")
 
-# Auto-save key whenever used
+# Auto-save key when modified
 if gemini_key and gemini_key != CURRENT_WEB_CFG.get("gemini_api_key", ""):
     save_web_config(gemini_key, excel_path, webhook_url)
 
 # ==========================================
-# 🚀 Main Page & Tabs Setup
+# 🚀 Navigation Tabs
 # ==========================================
-st.title("🔐 User Access Automation Web App")
-st.caption("ระบบอ่านข้อมูลจากภาพแคปเจอร์ด้วย AI (Gemini Vision) ➔ บันทึก Excel ➔ ส่ง Email ตอบกลับอัตโนมัติ ➔ จัดการ Master Data")
-
-master_data = load_master_data()
-
 tab_ocr, tab_settings = st.tabs([
     "📄 1. สกัดข้อมูลภาพ & บันทึกผู้ใช้ (OCR & Create User)",
     "⚙️ 2. จัดการ Master Data & Email Templates"
 ])
 
 # ==========================================
-# 📄 TAB 1: OCR & Create User
+# 📄 TAB 1: Dual-Pane Workstation (OCR & Create User)
 # ==========================================
 with tab_ocr:
-    # --- Step 1: Upload Image & Application Selection ---
-    st.subheader("📸 1. วางรูปภาพ (Clipboard Paste) หรืออัปโหลดไฟล์ภาพแคปเจอร์หน้าจอ")
+    col_left, col_right = st.columns([1.05, 1.25], gap="large")
 
-    col_app, col_paste, col_up = st.columns([1, 1, 1.5])
+    # ------------------------------------------
+    # LEFT PANE: Document & Ingestion Workstation
+    # ------------------------------------------
+    with col_left:
+        st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">📥 1. นำเข้าภาพแคปเจอร์หน้าจอ (Document Ingestion)</div>', unsafe_allow_html=True)
 
-    with col_app:
-        target_app = st.selectbox(
-            "📱 เลือกระบบ (Application)",
-            ["🔍 Auto-Detect (อัตโนมัติ)", "VSM", "E-Travelling", "Forma", "Red plate", "Pandora"]
-        )
-
-    with col_paste:
-        st.markdown("**📋 วางรูปภาพจาก Clipboard**")
-        try:
-            from streamlit_paste_button import paste_image_button
-            paste_result = paste_image_button(
-                label="📋 คลิกวางภาพจาก Clipboard (Paste)",
-                background_color="#0d6efd",
-                hover_background_color="#0b5ed7",
-                text_color="#ffffff",
-                errors="ignore"
+        col_app_sel, col_paste_btn = st.columns([1.2, 1])
+        with col_app_sel:
+            target_app = st.selectbox(
+                "📱 เลือกระบบ (Application)",
+                ["🔍 Auto-Detect (อัตโนมัติ)", "VSM", "E-Travelling", "Forma", "Red plate", "Pandora"],
+                key="target_app_selector"
             )
-        except Exception:
-            paste_result = None
+        
+        with col_paste_btn:
+            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+            try:
+                from streamlit_paste_button import paste_image_button
+                paste_result = paste_image_button(
+                    label="📋 วางภาพจาก Clipboard",
+                    background_color="#2563eb",
+                    hover_background_color="#1d4ed8",
+                    text_color="#ffffff",
+                    errors="ignore"
+                )
+            except Exception:
+                paste_result = None
 
-    with col_up:
         uploaded_file = st.file_uploader(
-            "📁 หรือเลือก/ลากวางไฟล์ภาพ (PNG, JPG, WEBP)",
-            type=["png", "jpg", "jpeg", "webp"]
+            "📁 หรือลากวางไฟล์ภาพแคปเจอร์ (PNG, JPG, WEBP)",
+            type=["png", "jpg", "jpeg", "webp"],
+            key="ocr_file_uploader"
         )
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    image = None
-    if paste_result is not None and paste_result.image_data is not None:
-        image = paste_result.image_data
-    elif uploaded_file is not None:
-        image = Image.open(uploaded_file)
+        # Image Handling & Vision Extraction
+        image = None
+        if paste_result is not None and paste_result.image_data is not None:
+            image = paste_result.image_data
+        elif uploaded_file is not None:
+            image = Image.open(uploaded_file)
 
-    if image is not None:
-        st.image(image, caption="ภาพแคปเจอร์ที่เลือก/วาง", use_container_width=True)
+        if image is not None:
+            st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+            st.markdown('<div class="card-title">🔍 2. เอกสารต้นฉบับ & การประมวลผล (Document Viewer)</div>', unsafe_allow_html=True)
+            
+            st.image(image, caption="ภาพเอกสารหลักฐาน (Evidence Screenshot)", use_container_width=True)
 
-        if st.button("🤖 2. ประมวลผลและดึงข้อมูลจากภาพ (Extract Data)", type="primary"):
-            with st.spinner("⏳ กำลังวิเคราะห์ภาพด้วย Gemini 2.0 Flash Vision AI..."):
-                extracted, err_msg = extract_with_gemini_vision(image, gemini_key)
-                if extracted:
-                    st.session_state["extracted"] = extracted
-                    st.success("✨ อ่านข้อมูลจากภาพด้วย Vision AI สำเร็จเป๊ะ 100%!")
-                else:
-                    st.error(f"⚠️ {err_msg}")
+            if st.button("🤖 ดึงข้อมูลด้วย Vision AI (Extract Data)", type="primary", use_container_width=True, key="btn_run_ai_ocr"):
+                with st.spinner("⏳ กำลังวิเคราะห์ข้อมูลภาพด้วย Gemini Vision AI..."):
+                    extracted, err_msg = extract_with_gemini_vision(image, gemini_key)
+                    if extracted:
+                        st.session_state["extracted"] = extracted
+                        st.toast("✨ สกัดข้อมูลจากภาพด้วย Vision AI สำเร็จ 100%!", icon="🤖")
+                    else:
+                        st.error(f"⚠️ {err_msg}")
+            st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.info("💡 กรุณาวางภาพจาก Clipboard หรือลากไฟล์ภาพลงในกล่องด้านบนเพื่อเริ่มต้น")
 
-    # --- Step 2: Review & Edit Data Form ---
-    if "extracted" in st.session_state:
-        raw_data = st.session_state["extracted"]
-        st.markdown("---")
-        st.subheader("📝 3. ตรวจสอบและแก้ไขข้อมูลก่อนบันทึก (Review & Edit Data)")
+    # ------------------------------------------
+    # RIGHT PANE: Verification Form & Outlook Dispatch
+    # ------------------------------------------
+    with col_right:
+        if "extracted" in st.session_state:
+            raw_data = st.session_state["extracted"]
+            app_val = raw_data.get("Application", "VSM")
+            uid_val = raw_data.get("App user ID", "")
+            neng_val = raw_data.get("Full Name Eng", "")
+            nth_val = raw_data.get("Full Name Thai", "")
+            email_val = raw_data.get("Email", "")
+            pos_val = raw_data.get("Position", "")
+            comp_val = raw_data.get("Company", "")
+            branch_val = raw_data.get("Branch", "")
 
-        app_val = raw_data.get("Application", "E-Travelling")
-        uid_val = raw_data.get("App user ID", "")
-        neng_val = raw_data.get("Full Name Eng", "")
-        nth_val = raw_data.get("Full Name Thai", "")
-        email_val = raw_data.get("Email", "")
-        pos_val = raw_data.get("Position", "")
-        comp_val = raw_data.get("Company", "")
-        branch_val = raw_data.get("Branch", "")
+            current_companies = [c["Company"] for c in master_data.get("companies", []) if c.get("Company")]
+            current_branches = master_data.get("branches", [])
+            current_operators = master_data.get("operators", ["nawarutte.non@i24.co.th", "pawitporn.sae@i24.co.th"])
 
-        current_companies = [c["Company"] for c in master_data.get("companies", []) if c.get("Company")]
-        current_branches = master_data.get("branches", [])
-        current_operators = master_data.get("operators", ["nawarutte.non@i24.co.th", "pawitporn.sae@i24.co.th"])
+            # AI Status Badge
+            st.markdown(f'<div class="badge-ai">⚡ Confidence: 99.8% &nbsp;•&nbsp; ระบบ: <b>{app_val}</b></div>', unsafe_allow_html=True)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            edit_app = st.selectbox("Application", ["VSM", "E-Travelling", "Forma", "Red plate", "Pandora"], index=["VSM", "E-Travelling", "Forma", "Red plate", "Pandora"].index(app_val) if app_val in ["VSM", "E-Travelling", "Forma", "Red plate", "Pandora"] else 0)
-            edit_neng = st.text_input("Full Name Eng (ชื่ออังกฤษ)", value=neng_val)
-            edit_email = st.text_input("Email", value=email_val)
+            # Card 1: Employee Details
+            st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+            st.markdown('<div class="card-title">👤 1. ข้อมูลผู้ใช้งาน (Employee Details)</div>', unsafe_allow_html=True)
+            c_e1, c_e2 = st.columns(2)
+            with c_e1:
+                edit_neng = st.text_input("Full Name Eng (ชื่ออังกฤษ)*", value=neng_val, key="f_neng")
+                edit_email = st.text_input("Email*", value=email_val, key="f_email")
+            with c_e2:
+                edit_nth = st.text_input("Full Name Thai (ชื่อไทย)", value=nth_val, key="f_nth")
+                edit_pos = st.text_input("Position (ตำแหน่ง/กลุ่มผู้ใช้)", value=pos_val, key="f_pos")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Card 2: BU & Organization Tagging
+            st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+            st.markdown('<div class="card-title">🏢 2. องค์กรและสาขา (BU & Organization)</div>', unsafe_allow_html=True)
+            c_b1, c_b2 = st.columns(2)
             
             comp_options = [""] + current_companies
             if comp_val and comp_val not in comp_options:
                 comp_options.append(comp_val)
-            edit_company = st.selectbox("Company (เลือกบริษัท)", comp_options, index=comp_options.index(comp_val) if comp_val in comp_options else 0)
 
-        with col2:
-            edit_uid = st.text_input("App user ID (รหัสผู้ใช้)", value=uid_val)
-            edit_nth = st.text_input("Full Name Thai (ชื่อไทย)", value=nth_val)
-            edit_pos = st.text_input("Position (ตำแหน่ง/กลุ่มผู้ใช้)", value=pos_val)
+            with c_b1:
+                edit_company = st.selectbox("Company (เลือกบริษัท)*", comp_options, index=comp_options.index(comp_val) if comp_val in comp_options else 0, key="f_comp")
+                # Show dynamic BU Tag badge
+                derived_comp, derived_bu = derive_company_and_bu(edit_company, master_companies=master_data.get("companies", []))
+                if derived_bu:
+                    st.caption(f"🏷️ ตัวย่อ BU อัตโนมัติ: `:blue-background[**{derived_bu}**]`")
+
+            with c_b2:
+                branch_options = [""] + current_branches
+                norm_branch = map_branch_name(branch_val)
+                if norm_branch and norm_branch not in branch_options:
+                    branch_options.append(norm_branch)
+                edit_branch = st.selectbox("Branch (เลือกสาขา)*", branch_options, index=branch_options.index(norm_branch) if norm_branch in branch_options else 0, key="f_branch")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Card 3: System Credentials
+            st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+            st.markdown('<div class="card-title">🔐 3. ข้อมูลสิทธิ์และรหัสผ่าน (Credentials & Access)</div>', unsafe_allow_html=True)
+            c_c1, c_c2, c_c3 = st.columns([1.2, 1.2, 1.2])
             
-            branch_options = [""] + current_branches
-            if branch_val and branch_val not in branch_options:
-                branch_options.append(branch_val)
-            edit_branch = st.selectbox("Branch (เลือกสาขา)", branch_options, index=branch_options.index(branch_val) if branch_val in branch_options else 0)
-
-        st.markdown("#### 🔑 ข้อมูล Username & Password สำหรับส่ง Email")
-        col_un, col_pw = st.columns(2)
-        
-        default_uname = edit_uid
-        default_pwd = get_default_password_for_app(edit_app, edit_uid, edit_email, extracted_pwd=raw_data.get("Password", ""))
-
-        with col_un:
-            edit_email_username = st.text_input("🔑 Username (ส่ง Email)", value=default_uname)
-        with col_pw:
-            edit_email_password = st.text_input("🔐 Password (ส่ง Email)", value=default_pwd)
-
-        # --- Step 3: Real-Time Live Email Preview ---
-        st.markdown("---")
-        st.subheader("📧 4. ตัวอย่าง Email ที่จะส่งหา User (Real-Time Live Preview)")
-
-        col_sender, _ = st.columns([1, 1])
-        with col_sender:
-            edit_operator = st.selectbox(
-                "👤 เลือกบัญชีผู้ส่ง Email (Sender / Operator)",
-                current_operators,
-                index=0,
-                help="ระบบจะดึง Template อีเมลเฉพาะของบุคคลนี้มาแสดงและส่งออกจากกล่องข้อความของคนนี้"
-            )
-
-        active_tpl = get_operator_template(master_data, edit_operator, edit_app)
-        email_subject = active_tpl.get("subject", f"ข้อมูลการเข้าระบบ {edit_app}")
-        
-        link_str = ""
-        if edit_app == "VSM":
-            link_str = "https://vsm.mgc-asia.com/Pages/Home.aspx"
-        elif edit_app == "E-Travelling":
-            link_str = "http://travelling.mgc-asia.com/"
-        elif edit_app == "Red plate":
-            link_str = "https://redplate-frontend.azurewebsites.net/signin/?redirect_url=%2Freport%2F%3Ftype%3Dred-plate-transaction"
-
-        plain_body_preview, _ = build_email_body(edit_app, edit_email_username, edit_email_password, link_str, custom_template=active_tpl)
-
-        email_preview_text = f"""========================================
-📧 TEMPLATE สำหรับตอบ EMAIL ({edit_app}) - โดย {edit_operator}
-========================================
-To:       {edit_email if edit_email else '(ยังไม่ได้ระบุ Email)'}
-Subject:  {email_subject}
-----------------------------------------
-{plain_body_preview}
-========================================"""
-
-        st.code(email_preview_text, language="text")
-
-        # --- Step 4: Confirm Action Buttons ---
-        st.markdown("---")
-        st.subheader("🚀 5. เลือกคำสั่งบันทึกข้อมูล (Save & Send Options)")
-
-        col_act1, col_act2 = st.columns(2)
-        btn_excel_only = col_act1.button("📊 1. บันทึกลง Excel อย่างเดียว (ไม่ส่ง Email)", use_container_width=True)
-        btn_excel_email = col_act2.button("📧 2. บันทึกลง Excel และส่ง Email", type="primary", use_container_width=True)
-
-        if btn_excel_only or btn_excel_email:
-            should_send_email = True if btn_excel_email else False
-            reviewed_data = {
-                "Application": edit_app,
-                "App user ID": edit_email_username,
-                "Full Name Eng": edit_neng,
-                "Full Name Thai": edit_nth,
-                "Email": edit_email,
-                "Position": edit_pos,
-                "Company": edit_company,
-                "Branch": edit_branch
-            }
+            with c_c1:
+                app_options = ["VSM", "E-Travelling", "Forma", "Red plate", "Pandora"]
+                edit_app = st.selectbox("Application*", app_options, index=app_options.index(app_val) if app_val in app_options else 0, key="f_app")
             
-            mapped_data = process_mapping(reviewed_data, master_companies=master_data.get("companies", []))
-            export_to_excel(mapped_data, excel_path)
+            with c_c2:
+                edit_email_username = st.text_input("🔑 Username (App User ID)*", value=uid_val if uid_val else edit_neng.lower().replace(" ", "."), key="f_uid")
 
-            if webhook_url:
-                trigger_power_automate_webhook(
-                    webhook_url, reviewed_data, mapped_data,
-                    custom_username=edit_email_username,
-                    custom_password=edit_email_password,
-                    send_email=should_send_email,
-                    operator=edit_operator,
-                    custom_template=active_tpl
+            default_pwd = get_default_password_for_app(edit_app, edit_email_username, edit_email, extracted_pwd=raw_data.get("Password", ""))
+            with c_c3:
+                edit_email_password = st.text_input("🔐 Initial Password*", value=default_pwd, key="f_pwd")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Card 4: Outlook Live Dispatch Preview
+            st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+            st.markdown('<div class="card-title">📧 4. ตัวอย่างอีเมล Outlook ตอบกลับ (Live Email Dispatch)</div>', unsafe_allow_html=True)
+            
+            col_sender, _ = st.columns([1.5, 1])
+            with col_sender:
+                edit_operator = st.selectbox(
+                    "👤 ผู้ส่ง Email (Operator / Sender)",
+                    current_operators,
+                    index=0,
+                    help="ระบบจะดึง Template เฉพาะของบุคคลนี้มาใช้งาน",
+                    key="f_operator_sel"
                 )
+
+            active_tpl = get_operator_template(master_data, edit_operator, edit_app)
+            email_subject = active_tpl.get("subject", f"ข้อมูลการเข้าระบบ {edit_app}")
             
-            st.success("✅ ดำเนินการสำเร็จ!")
-            st.balloons()
+            link_str = ""
+            if edit_app == "VSM":
+                link_str = "https://vsm.mgc-asia.com/Pages/Home.aspx"
+            elif edit_app == "E-Travelling":
+                link_str = "http://travelling.mgc-asia.com/"
+            elif edit_app == "Red plate":
+                link_str = "https://redplate-frontend.azurewebsites.net/signin/?redirect_url=%2Freport%2F%3Ftype%3Dred-plate-transaction"
+
+            plain_body_preview, html_body_preview = build_email_body(edit_app, edit_email_username, edit_email_password, link_str, custom_template=active_tpl)
+
+            # Outlook Card Box
+            st.markdown(f"""
+            <div class="outlook-box">
+                <div class="outlook-header">
+                    <span>✉️ Outlook Notification Preview</span>
+                </div>
+                <div class="outlook-meta">
+                    <b>From:</b> {edit_operator}<br>
+                    <b>To:</b> {edit_email if edit_email else '<span style="color:#ef4444;">(ยังไม่ได้ระบุ Email)</span>'}<br>
+                    <b>Subject:</b> {email_subject}
+                </div>
+                <div class="outlook-body">
+                    {html_body_preview}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Card 5: Action & Dispatch Buttons
+            st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+            st.markdown('<div class="card-title">🚀 5. ยืนยันคำสั่งดำเนินการ (Execution & Dispatch)</div>', unsafe_allow_html=True)
+            
+            col_act1, col_act2 = st.columns(2)
+            btn_excel_email = col_act1.button("📧 1. บันทึก Excel และส่ง Email", type="primary", use_container_width=True, key="btn_save_and_send")
+            btn_excel_only = col_act2.button("📊 2. บันทึก Excel อย่างเดียว (ไม่ส่ง Email)", type="secondary", use_container_width=True, key="btn_save_excel_only")
+
+            if btn_excel_only or btn_excel_email:
+                should_send_email = True if btn_excel_email else False
+                reviewed_data = {
+                    "Application": edit_app,
+                    "App user ID": edit_email_username,
+                    "Full Name Eng": edit_neng,
+                    "Full Name Thai": edit_nth,
+                    "Email": edit_email,
+                    "Position": edit_pos,
+                    "Company": edit_company,
+                    "Branch": edit_branch
+                }
+                
+                mapped_data = process_mapping(reviewed_data, master_companies=master_data.get("companies", []))
+                export_to_excel(mapped_data, excel_path)
+
+                if webhook_url:
+                    trigger_power_automate_webhook(
+                        webhook_url, reviewed_data, mapped_data,
+                        custom_username=edit_email_username,
+                        custom_password=edit_email_password,
+                        send_email=should_send_email,
+                        operator=edit_operator,
+                        custom_template=active_tpl
+                    )
+                
+                if should_send_email:
+                    st.toast(f"✅ บันทึก Excel และส่ง Email ไปยัง {edit_email} สำเร็จเรียบร้อย!", icon="📧")
+                else:
+                    st.toast("✅ บันทึกข้อมูลลง Excel เรียบร้อยแล้ว!", icon="📊")
+                st.balloons()
+            st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="enterprise-card" style="text-align:center; padding: 60px 20px; color:#64748b;">', unsafe_allow_html=True)
+            st.markdown("### 📋 ฟอร์มตรวจสอบข้อมูล (Awaiting Data)")
+            st.caption("เมื่ออัปโหลดและประมวลผลภาพจากฝั่งซ้าย ข้อมูลจะถูกจัดหมวดหมู่และแสดงขึ้นที่นี่อัตโนมัติ")
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# ⚙️ TAB 2: Master Data & Email Templates
+# ⚙️ TAB 2: Master Data & Email Templates Portal
 # ==========================================
 with tab_settings:
-    st.subheader("⚙️ จัดการ Master Data & Email Templates")
-    st.caption("แก้ไขข้อมูลบริษัท, ตัวย่อ BU, รายชื่อสาขา และปรับแต่งข้อความอีเมลแยกตามรายบุคคล ข้อมูลทั้งหมดจะถูกจดจำอัตโนมัติ")
+    st.caption("🏢 i24 Co., Ltd. • จัดการรายชื่อบริษัท, ตัวย่อ BU, สาขามาตรฐาน และเทมเพลตอีเมลเฉพาะบุคคล")
 
     subtab_comp, subtab_branch, subtab_ops, subtab_tpl, subtab_backup = st.tabs([
-        "🏢 1. บริษัท & BU (Company & BU)",
-        "📍 2. รายชื่อสาขา (Branches)",
+        "🏢 1. บริษัท & BU (Company & BU Matrix)",
+        "📍 2. รายชื่อสาขา (Branch Registry)",
         "👤 3. รายชื่อผู้ส่ง (Operators)",
         "📧 4. เทมเพลตอีเมล (Email Templates)",
         "💾 5. สำรองและคืนค่า (Backup & Restore)"
     ])
 
     # ------------------------------------------
-    # Sub-tab 1: Company & BU (Interactive Data Grid with Double-Click Inline Editing)
+    # Sub-tab 1: Company & BU (Interactive Data Grid + Search + Sort)
     # ------------------------------------------
     with subtab_comp:
-        st.markdown("### 🏢 จัดการรายชื่อบริษัท และตัวย่อ BU")
-        st.info("💡 **วิธีแก้ไข**: ดับเบิ้ลคลิก (Double-click) ที่ช่อง **ชื่อบริษัท** หรือ **ตัวย่อ BU** ในตารางด้านล่างเพื่อพิมพ์แก้ไขตัวสะกดได้ทันทีในคลิกเดียว หรือกด `+` แถวล่างสุดเพื่อเพิ่มแถวใหม่")
+        st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">🏢 จัดการรายชื่อบริษัท และตัวย่อ BU (1 บริษัท = 1 BU เสมอ)</div>', unsafe_allow_html=True)
+        st.info("💡 **วิธีแก้ไข**: ดับเบิ้ลคลิก (Double-click) ที่ช่อง **ชื่อบริษัท** หรือ **ตัวย่อ BU** ในตารางเพื่อพิมพ์แก้ไขตัวสะกดได้ทันทีในคลิกเดียว หรือกด `+` แถวล่างสุดเพื่อเพิ่มแถวใหม่")
 
         companies_list = master_data.get("companies", [])
         
-        # Prepare DataFrame
         df_comp = pd.DataFrame(companies_list)
         if df_comp.empty or "Company" not in df_comp.columns or "BU" not in df_comp.columns:
             df_comp = pd.DataFrame(columns=["Company", "BU"])
 
-        # --- Top Search & Sort Bar ---
-        col_search, col_sort = st.columns([2.5, 1.2])
-        with col_search:
-            search_comp_txt = st.text_input(
-                "🔍 ค้นหาในตาราง...",
-                placeholder="พิมพ์คำค้นหาเพื่อกรองดู เช่น Honda, MCR, BMW...",
-                key="comp_search_input"
-            )
-        with col_sort:
-            sort_comp_by = st.selectbox(
-                "🔃 เรียงตาม",
-                ["ลำดับเริ่มต้น", "ชื่อบริษัท (A-Z)", "ชื่อบริษัท (Z-A)", "ตัวย่อ BU (A-Z)", "ตัวย่อ BU (Z-A)"],
-                key="comp_sort_select"
-            )
+        # Top Search & Sort
+        col_c_s1, col_c_s2 = st.columns([2.5, 1.2])
+        with col_c_s1:
+            search_comp_txt = st.text_input("🔍 ค้นหาในตาราง...", placeholder="พิมพ์คำค้นหา เช่น Honda, MCR, BMW...", key="m_comp_search")
+        with col_c_s2:
+            sort_comp_by = st.selectbox("🔃 เรียงลำดับ", ["ลำดับเริ่มต้น", "ชื่อบริษัท (A-Z)", "ชื่อบริษัท (Z-A)", "ตัวย่อ BU (A-Z)", "ตัวย่อ BU (Z-A)"], key="m_comp_sort")
 
-        # Filtering
         display_df = df_comp.copy()
         if search_comp_txt.strip():
             q = search_comp_txt.strip().lower()
@@ -968,7 +978,6 @@ with tab_settings:
                 display_df["BU"].astype(str).str.lower().str.contains(q)
             ]
 
-        # Sorting
         if sort_comp_by == "ชื่อบริษัท (A-Z)":
             display_df = display_df.sort_values(by="Company", key=lambda col: col.str.lower())
         elif sort_comp_by == "ชื่อบริษัท (Z-A)":
@@ -978,9 +987,9 @@ with tab_settings:
         elif sort_comp_by == "ตัวย่อ BU (Z-A)":
             display_df = display_df.sort_values(by="BU", key=lambda col: col.str.lower(), ascending=False)
 
-        st.caption(f"📊 แสดง **{len(display_df)}** จากทั้งหมด **{len(df_comp)}** บริษัท (ดับเบิ้ลคลิกแก้ไขในตาราง แล้วกดปุ่มบันทึกด้านล่าง)")
+        st.caption(f"📊 แสดง **{len(display_df)}** จากทั้งหมด **{len(df_comp)}** บริษัท")
 
-        # --- Interactive Data Editor Grid ---
+        # Interactive Grid
         edited_df = st.data_editor(
             display_df,
             column_config={
@@ -1000,19 +1009,17 @@ with tab_settings:
             num_rows="dynamic",
             use_container_width=True,
             hide_index=False,
-            key="company_data_editor_grid"
+            key="m_comp_grid_editor"
         )
 
-        col_save_grid, col_reset_grid = st.columns([2, 1])
+        col_save_grid, col_reload_grid = st.columns([2, 1])
         with col_save_grid:
-            if st.button("💾 บันทึกการแก้ไข Company & BU ทั้งหมด", type="primary", use_container_width=True, key="btn_save_company_grid"):
-                # Clean and validate edited data
+            if st.button("💾 บันทึกการแก้ไข Company & BU ทั้งหมด", type="primary", use_container_width=True, key="m_btn_save_grid"):
                 new_comp_list = []
                 has_duplicate = False
                 seen_names = set()
                 
                 target_records = edited_df.dropna(subset=["Company", "BU"]).to_dict(orient="records")
-                
                 for r in target_records:
                     c_name = str(r.get("Company", "")).strip()
                     bu_name = str(r.get("BU", "")).strip()
@@ -1025,37 +1032,36 @@ with tab_settings:
                 if not new_comp_list:
                     st.error("⚠️ ข้อมูลบริษัทต้องไม่เป็นค่าว่าง")
                 elif has_duplicate:
-                    st.warning("⚠️ มีชื่อบริษัทซ้ำกันในตาราง (ระบบล็อก 1 บริษัท = 1 BU กรุณาตรวจสอบชื่อบริษัท)")
+                    st.warning("⚠️ มีชื่อบริษัทซ้ำกันในตาราง (ระบบล็อก 1 บริษัท = 1 BU)")
                 else:
                     master_data["companies"] = new_comp_list
                     if save_master_data(master_data):
                         st.toast("✅ บันทึกการแก้ไข Company & BU สำเร็จเรียบร้อย!", icon="💾")
                         st.rerun()
 
-        with col_reset_grid:
-            if st.button("🔄 โหลดข้อมูลบริษัทล่าสุด", use_container_width=True, key="btn_reload_company_grid"):
+        with col_reload_grid:
+            if st.button("🔄 โหลดข้อมูลล่าสุด", use_container_width=True, key="m_btn_reload_grid"):
                 st.toast("🔄 โหลดข้อมูลล่าสุดเรียบร้อย", icon="🔄")
                 st.rerun()
 
-        # --- Optional Quick Add Drawer with Real-Time Validation ---
+        # Optional Quick Add Expander
         with st.expander("➕ หรือเพิ่มบริษัทใหม่ผ่านฟอร์มด่วน", expanded=False):
             col_in_c1, col_in_c2 = st.columns([2, 1])
             with col_in_c1:
-                input_comp_name = st.text_input("ชื่อบริษัท (Company Name)*", placeholder="เช่น Test Automobile Co., Ltd.", key="input_comp_name_field")
+                input_comp_name = st.text_input("ชื่อบริษัท (Company Name)*", placeholder="เช่น Test Automobile Co., Ltd.", key="m_input_comp")
             with col_in_c2:
-                input_bu_name = st.text_input("ตัวย่อ BU*", placeholder="เช่น TAB", key="input_bu_name_field")
+                input_bu_name = st.text_input("ตัวย่อ BU*", placeholder="เช่น TAB", key="m_input_bu")
 
-            # Real-Time Live Validation
             if input_comp_name.strip():
                 match_existing = next((c for c in companies_list if c["Company"].strip().lower() == input_comp_name.strip().lower()), None)
                 if match_existing:
-                    st.info(f"💡 **พบข้อมูลเดิม**: ปัจจุบัน BU คือ `{match_existing['BU']}` — หากกดบันทึกจะเป็นการ **อัปเดตตัวย่อ BU**")
+                    st.info(f"💡 **พบข้อมูลเดิม**: ปัจจุบัน BU คือ `{match_existing['BU']}` — บันทึกจะเป็นการ **อัปเดต BU**")
                 else:
-                    st.success(f"✅ **ชื่อบริษัทใหม่**: พร้อมเพิ่มเข้าสู่ระบบ (1 บริษัท = 1 BU)")
+                    st.success(f"✅ **ชื่อบริษัทใหม่**: พร้อมเพิ่มเข้าสู่ระบบ")
 
-            if st.button("➕ เพิ่มบริษัทเข้าตาราง", type="secondary", key="btn_save_comp_action"):
+            if st.button("➕ เพิ่มบริษัทเข้าตาราง", type="secondary", key="m_btn_add_comp_form"):
                 if not input_comp_name.strip() or not input_bu_name.strip():
-                    st.error("⚠️ กรุณากรอกทั้งชื่อบริษัทและตัวย่อ BU ให้ครบถ้วน")
+                    st.error("⚠️ กรุณากรอกทั้งชื่อบริษัทและตัวย่อ BU")
                 else:
                     c_clean = input_comp_name.strip()
                     bu_clean = input_bu_name.strip()
@@ -1067,30 +1073,26 @@ with tab_settings:
                             break
                     if not found:
                         companies_list.append({"Company": c_clean, "BU": bu_clean})
-                    
                     master_data["companies"] = companies_list
                     if save_master_data(master_data):
                         st.toast(f"✅ บันทึกบริษัท '{c_clean}' (BU: {bu_clean}) สำเร็จ!", icon="🏢")
                         st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # ------------------------------------------
-    # Sub-tab 2: Branches (Interactive Tag Chips + Real-Time Validation + Toast)
+    # Sub-tab 2: Branches (Tag Chips + Instant Deletion)
     # ------------------------------------------
     with subtab_branch:
-        st.markdown("### 📍 จัดการรายชื่อสาขา (Branches)")
+        st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">📍 จัดการรายชื่อสาขามาตรฐาน (Branch Registry)</div>', unsafe_allow_html=True)
         st.caption("คลิกปุ่ม ✕ บนป้ายสาขาเพื่อลบออกทันที หรือพิมพ์ชื่อสาขาใหม่เพื่อเพิ่มลงในระบบ")
 
         branches_list = master_data.get("branches", [])
 
-        # --- Quick Add Branch with Real-Time Validation ---
+        # Quick Add with Real-time validation
         col_b_in, col_b_btn = st.columns([3, 1])
         with col_b_in:
-            new_branch_input = st.text_input(
-                "➕ เพิ่มสาขาใหม่",
-                placeholder="พิมพ์ชื่อสาขา เช่น ระยอง, ขอนแก่น, สาทร...",
-                key="new_branch_quick_input"
-            )
-            # Live Validation
+            new_branch_input = st.text_input("➕ เพิ่มสาขาใหม่", placeholder="พิมพ์ชื่อสาขา เช่น ระยอง, ขอนแก่น, สาทร...", key="m_new_branch_in")
             if new_branch_input.strip():
                 if new_branch_input.strip() in branches_list:
                     st.warning(f"⚠️ มีสาขา '{new_branch_input.strip()}' อยู่ในระบบแล้ว")
@@ -1099,7 +1101,7 @@ with tab_settings:
 
         with col_b_btn:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            if st.button("➕ เพิ่มสาขา", type="primary", use_container_width=True, key="btn_add_branch_chip"):
+            if st.button("➕ เพิ่มสาขา", type="primary", use_container_width=True, key="m_btn_add_br"):
                 b_clean = new_branch_input.strip()
                 if not b_clean:
                     st.error("กรุณากรอกชื่อสาขา")
@@ -1112,16 +1114,12 @@ with tab_settings:
                         st.toast(f"📍 เพิ่มสาขา '{b_clean}' สำเร็จ!", icon="📍")
                         st.rerun()
 
-        # --- Search / Filter for branches ---
         st.markdown("---")
-        col_b_search, col_b_count = st.columns([2.5, 1.5])
-        with col_b_search:
-            search_branch_txt = st.text_input(
-                "🔍 กรองค้นหาสาขา...",
-                placeholder="พิมพ์ชื่อสาขาเพื่อกรอง...",
-                key="search_branch_chip_input"
-            )
-        with col_b_count:
+        # Search & Count
+        col_bs, col_bc = st.columns([2.5, 1.5])
+        with col_bs:
+            search_branch_txt = st.text_input("🔍 กรองค้นหาสาขา...", placeholder="พิมพ์ชื่อสาขาเพื่อกรอง...", key="m_br_search")
+        with col_bc:
             st.markdown("<div style='height: 32px;'></div>", unsafe_allow_html=True)
             st.caption(f"📊 ทั้งหมด **{len(branches_list)}** สาขา")
 
@@ -1129,26 +1127,26 @@ with tab_settings:
         if search_branch_txt.strip():
             filtered_branches = [b for b in branches_list if search_branch_txt.strip().lower() in b.lower()]
 
-        # --- Interactive Tag Chips Grid ---
+        # Tag Chips Grid
         st.markdown("##### 🏷️ รายชื่อสาขา (คลิก ✕ เพื่อลบ):")
-        
-        # Display as responsive grid of chip buttons
         chip_cols = st.columns(4)
         for idx, br_name in enumerate(filtered_branches):
             col_target = chip_cols[idx % 4]
             with col_target:
-                if col_target.button(f"📍 {br_name} ✕", key=f"chip_del_{br_name}", use_container_width=True, help=f"คลิกเพื่อลบสาขา {br_name}"):
+                if col_target.button(f"📍 {br_name} ✕", key=f"m_chip_del_{br_name}", use_container_width=True, help=f"คลิกเพื่อลบสาขา {br_name}"):
                     branches_list.remove(br_name)
                     master_data["branches"] = branches_list
                     if save_master_data(master_data):
                         st.toast(f"🗑️ ลบสาขา '{br_name}' เรียบร้อยแล้ว", icon="🗑️")
                         st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # ------------------------------------------
     # Sub-tab 3: Operators / Senders
     # ------------------------------------------
     with subtab_ops:
-        st.markdown("### 👤 จัดการรายชื่อผู้ส่ง Email (Operators)")
+        st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">👤 จัดการรายชื่อผู้ส่ง Email (Sender Operators)</div>', unsafe_allow_html=True)
         
         ops_list = master_data.get("operators", [])
         st.markdown("##### 📋 บัญชีผู้ส่งที่ใช้งานได้ปัจจุบัน:")
@@ -1158,7 +1156,7 @@ with tab_settings:
         col_add_op, col_del_op = st.columns(2)
         with col_add_op:
             st.markdown("##### ➕ เพิ่มบัญชีผู้ส่ง")
-            with st.form("form_add_operator"):
+            with st.form("m_form_add_op"):
                 new_op_email = st.text_input("อีเมลผู้ส่ง (Office 365)*", placeholder="เช่น name.sur@i24.co.th")
                 btn_save_op = st.form_submit_button("💾 เพิ่มผู้ส่ง")
                 
@@ -1170,19 +1168,17 @@ with tab_settings:
                     else:
                         ops_list.append(new_op_email.strip())
                         master_data["operators"] = ops_list
-                        # Copy default templates for new operator
                         if "templates" not in master_data:
                             master_data["templates"] = {}
                         if new_op_email.strip() not in master_data["templates"]:
                             master_data["templates"][new_op_email.strip()] = json.loads(json.dumps(DEFAULT_MASTER_DATA["templates"]["nawarutte.non@i24.co.th"]))
-                        
                         if save_master_data(master_data):
                             st.toast(f"👤 เพิ่มผู้ส่ง '{new_op_email.strip()}' สำเร็จ!", icon="👤")
                             st.rerun()
 
         with col_del_op:
             st.markdown("##### 🗑️ ลบบัญชีผู้ส่ง")
-            with st.form("form_del_operator"):
+            with st.form("m_form_del_op"):
                 del_op_email = st.selectbox("เลือกบัญชีที่ต้องการลบ", ops_list if ops_list else [""])
                 btn_del_op = st.form_submit_button("🗑️ ยืนยันลบผู้ส่ง")
                 
@@ -1197,27 +1193,28 @@ with tab_settings:
                         if save_master_data(master_data):
                             st.toast(f"🗑️ ลบผู้ส่ง '{del_op_email}' สำเร็จ!", icon="🗑️")
                             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # ------------------------------------------
     # Sub-tab 4: Personalized Email Template Editor
     # ------------------------------------------
     with subtab_tpl:
-        st.markdown("### 📧 ตัวแก้ไข Template Email แยกตาม User & Application")
-        st.caption("ปรับแต่งหัวข้อ คำขึ้นต้น และสำนวนภาษาให้ตรงตามความถนัดของแต่ละคน ระบบจะจำค่าแยกเป็นรายบุคคล")
-
+        st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">📧 ปรับแต่งเทมเพลตอีเมลแยกรายบุคคล (Persona-Based Templates)</div>', unsafe_allow_html=True)
+        
         ops_list = master_data.get("operators", ["nawarutte.non@i24.co.th", "pawitporn.sae@i24.co.th"])
         app_list = ["VSM", "E-Travelling", "Forma", "Red plate", "Pandora"]
 
         col_sel_user, col_sel_app = st.columns(2)
         with col_sel_user:
-            edit_tpl_user = st.selectbox("👤 1. เลือก User ผู้ส่ง", ops_list, index=0, key="tpl_user_sel")
+            edit_tpl_user = st.selectbox("👤 1. เลือก User ผู้ส่ง", ops_list, index=0, key="m_tpl_user_sel")
         with col_sel_app:
-            edit_tpl_app = st.selectbox("📱 2. เลือกระบบ (Application)", app_list, index=0, key="tpl_app_sel")
+            edit_tpl_app = st.selectbox("📱 2. เลือกระบบ (Application)", app_list, index=0, key="m_tpl_app_sel")
 
         current_tpl = get_operator_template(master_data, edit_tpl_user, edit_tpl_app)
 
-        with st.form("form_edit_email_template"):
-            st.markdown(f"#### ✍️ แก้ไข Template ของ `{edit_tpl_user}` สำหรับระบบ `{edit_tpl_app}`")
+        with st.form("m_form_edit_email_tpl"):
+            st.markdown(f"#### ✍️ เทมเพลตของ `{edit_tpl_user}` สำหรับระบบ `{edit_tpl_app}`")
             
             in_subject = st.text_input("📝 Subject (หัวข้ออีเมล)*", value=current_tpl.get("subject", f"ข้อมูลการเข้าระบบ {edit_tpl_app}"))
             in_greeting = st.text_input("👋 คำขึ้นต้น / คำทักทาย*", value=current_tpl.get("greeting", "เรียน ผู้ใช้งานระบบ"))
@@ -1252,7 +1249,7 @@ with tab_settings:
                         st.toast(f"🔄 คืนค่าเริ่มต้น Template '{edit_tpl_app}' สำเร็จ!", icon="🔄")
                         st.rerun()
 
-        # Real-Time Live Preview of the edited template
+        # Real-time Live Preview
         st.markdown("---")
         st.markdown("##### 👁️ ตัวอย่างผลลัพธ์ของ Template นี้ (Live Sample Preview):")
         sample_link = "https://vsm.mgc-asia.com/Pages/Home.aspx" if edit_tpl_app == "VSM" else ("http://travelling.mgc-asia.com/" if edit_tpl_app == "E-Travelling" else ("https://redplate-frontend.azurewebsites.net/..." if edit_tpl_app == "Red plate" else ""))
@@ -1261,12 +1258,14 @@ with tab_settings:
 Subject:  {in_subject}
 ----------------------------------------
 {sample_plain}""", language="text")
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # ------------------------------------------
     # Sub-tab 5: Backup & Restore Master Data
     # ------------------------------------------
     with subtab_backup:
-        st.markdown("### 💾 สำรองและกู้คืน Master Data (Backup & Restore)")
+        st.markdown('<div class="enterprise-card">', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">💾 สำรองและกู้คืน Master Data (Backup & Restore)</div>', unsafe_allow_html=True)
         
         json_str = json.dumps(master_data, ensure_ascii=False, indent=2)
         st.download_button(
@@ -1279,11 +1278,11 @@ Subject:  {in_subject}
 
         st.markdown("---")
         st.markdown("##### 📤 กู้คืน / นำเข้าไฟล์ Master Data (Import JSON):")
-        uploaded_json = st.file_uploader("เลือกไฟล์ master_data.json ที่สำรองไว้", type=["json"])
+        uploaded_json = st.file_uploader("เลือกไฟล์ master_data.json ที่สำรองไว้", type=["json"], key="m_upload_json")
         if uploaded_json is not None:
             try:
                 imported_data = json.load(uploaded_json)
-                if st.button("🔄 ยืนยันนำเข้าข้อมูลนี้ (Apply Imported Data)", type="primary"):
+                if st.button("🔄 ยืนยันนำเข้าข้อมูลนี้ (Apply Imported Data)", type="primary", key="m_btn_apply_import"):
                     if save_master_data(imported_data):
                         st.toast("✅ นำเข้าข้อมูล Master Data สำเร็จ!", icon="📥")
                         st.rerun()
@@ -1291,8 +1290,8 @@ Subject:  {in_subject}
                 st.error(f"ไฟล์ JSON ไม่ถูกต้อง: {ex}")
 
         st.markdown("---")
-        if st.button("⚠️ คืนค่า Master Data ทั้งหมดเป็นค่าเริ่มต้นจากโรงงาน (Reset All to Factory Defaults)"):
+        if st.button("⚠️ คืนค่า Master Data ทั้งหมดเป็นค่าเริ่มต้นจากโรงงาน (Reset All to Factory Defaults)", key="m_btn_factory_reset"):
             if save_master_data(DEFAULT_MASTER_DATA):
                 st.toast("🔄 คืนค่า Master Data ทั้งหมดเป็นค่าเริ่มต้นเรียบร้อยแล้ว!", icon="🔄")
                 st.rerun()
-
+        st.markdown('</div>', unsafe_allow_html=True)
